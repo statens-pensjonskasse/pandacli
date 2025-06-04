@@ -9,8 +9,9 @@ pub fn valider_rutinefil(filsti: &str) {
         return;
     }
 
-    let mut definerte_variabler = HashSet::new();
+    let mut definerte_variabler: HashSet<String> = HashSet::new();
     let mut udefinerte_variabler = Vec::new();
+    let mut definert_men_ikke_brukte_variabler = Vec::new();
     let mut manglende_variabler = Vec::new();
     let mut inneholder_feil = false;
 
@@ -32,15 +33,24 @@ pub fn valider_rutinefil(filsti: &str) {
 
     let brukte_variabler = finn_brukte_variabler(&filinnhold);
 
-    // Extract defined variables and check for undefined values
     if let Some(variabler) = json.get(VARIABLER_KEY).and_then(Value::as_object) {
         for (key, value) in variabler {
             definerte_variabler.insert(key.to_string());
-            if let Some(str_value) = value.as_str() {
-                if str_value.contains('<') {
-                    udefinerte_variabler.push(format!("{}: {}", key, str_value));
-                    inneholder_feil = true;
-                }
+
+            match value {
+                Value::String(s)=> {
+                    if s.is_empty() {
+                        udefinerte_variabler.push(format!("{}: \"\"", key));
+                        inneholder_feil = true;
+                    }
+                },
+                Value::Array(arr) => {
+                    if arr.is_empty() {
+                        udefinerte_variabler.push(format!("{}: []", key));
+                        inneholder_feil = true;
+                    }
+                },
+                _ => {}
             }
         }
     }
@@ -53,6 +63,14 @@ pub fn valider_rutinefil(filsti: &str) {
         }
     }
     
+    // Sjekker for definerte variabler som ikke er brukt
+    for var in &definerte_variabler {
+        if !brukte_variabler.contains(var) {
+            definert_men_ikke_brukte_variabler.push(var.clone());
+            inneholder_feil = true;
+        }
+    }
+
     if !inneholder_feil {
         println!("✅ Ingen feil funnet i rutinefilen '{}'.", filsti);
     } else {
@@ -63,7 +81,27 @@ pub fn valider_rutinefil(filsti: &str) {
         [] => {} // Ingen manglende variabler
         variabler => {
             rapporter_valideringsfeil(
-                "❌ Følgende brukte variabler mangler i 'variabler', filen vil ikke fungere:",
+                "❌  Følgende brukte variabler mangler i 'variabler', filen vil ikke fungere:",
+                variabler,
+            );
+        }
+    }
+    
+    match udefinerte_variabler.as_slice() {
+        [] => {} // Ingen udefinerte variabler
+        variabler => {
+            rapporter_valideringsfeil(
+                "❓  Følgende variabler har ikke blitt utfylt:",
+                variabler,
+            );
+        }
+    }
+
+    match definert_men_ikke_brukte_variabler.as_slice() {
+        [] => {} // Ingen definerte variabler som ikke er brukt
+        variabler => {
+            rapporter_valideringsfeil(
+                "⚠️  Følgende variabler er definert men ikke brukt i rutinefilen:",
                 variabler,
             );
         }
