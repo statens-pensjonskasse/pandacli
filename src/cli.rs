@@ -6,12 +6,11 @@ use clap::{Parser, Subcommand};
 #[command(about = "Ett kommandolinje-verktøy for bruk av premieleveranse", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub kommando: Kommandoer,
 }
 
-
 #[derive(Subcommand)]
-pub enum Commands {
+pub enum Kommandoer {
     RutinefilValider {
         file_path: String,
     },
