@@ -1,1 +1,23 @@
-/target
+# Generert av Cargo
+/target/
+
+# VS Code
+.vscode/
+
+# IntelliJ / CLion / RustRover
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Logs
+*.log
