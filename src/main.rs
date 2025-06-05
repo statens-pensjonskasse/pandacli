@@ -3,7 +3,7 @@ mod kommandoer;
 
 use clap::Parser;
 use cli::Cli;
-use kommandoer::{rutinefil_validering::valider_rutinefil};
+use kommandoer::{rutinefil_validering::rutinefil_valider};
 
 
 fn main() {
@@ -11,7 +11,7 @@ fn main() {
 
     match &cli.kommando {
         cli::Kommandoer::RutinefilValider { file_path } => {
-            valider_rutinefil(file_path);
+            rutinefil_valider(file_path);
         }
     }
 }

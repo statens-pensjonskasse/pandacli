@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-pub fn valider_rutinefil(filsti: &str) {
+pub fn rutinefil_valider(filsti: &str) {
     const VARIABLER_KEY: &str = "variabler";
     if filen_ikke_er_json(filsti) {
         return;
