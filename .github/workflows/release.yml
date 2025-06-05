@@ -1,0 +1,93 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    name: Bump versjon og bygg binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sett opp Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Installer cargo-release
+        run: cargo install cargo-release
+
+      - name: Finn versjonsbump fra commits
+        id: version
+        run: |
+          COMMITS=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:%s)
+          echo "$COMMITS"
+          BUMP="patch"
+          if echo "$COMMITS" | grep -qE "^feat!|BREAKING CHANGE"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qE "^feat"; then
+            BUMP="minor"
+          elif echo "$COMMITS" | grep -qE "^fix"; then
+            BUMP="patch"
+          fi
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+
+      - name: Bump version, tag, og push
+        run: |
+          cargo release ${{ steps.version.outputs.bump }} --no-publish --no-push --execute
+          git push --follow-tags
+
+      - name: Finn versjon
+        id: version_tag
+        run: |
+          VERSION=$(cargo pkgid | sed 's/.*#//')
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    name: Cross-compile og last opp release
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ""
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            ext: ""
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            ext: ""
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+          target: ${{ matrix.target }}
+
+      - name: Install cross (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo install cross
+
+      - name: Bygg binary
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Gi nytt navn og forbered artifact
+        run: |
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/pnd release/pnd-${{ matrix.target }}${{ matrix.ext }}
+
+      - name: Last opp release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
