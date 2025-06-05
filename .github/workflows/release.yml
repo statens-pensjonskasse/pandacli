@@ -16,9 +16,10 @@ jobs:
           fetch-depth: 0
 
       - name: Sett opp Rust
-        uses: rust-lang/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
-          rust-version: stable
+          toolchain: stable
+          override: true
 
       - name: Installer cargo-release
         run: cargo install cargo-release --version 0.25.18
