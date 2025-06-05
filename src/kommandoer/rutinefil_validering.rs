@@ -1,11 +1,11 @@
 use serde_json::Value;
 use std::collections::HashSet;
 use std::fs;
-use std::path::Path;
+use crate::kommandoer::utils;
 
 pub fn rutinefil_valider(filsti: &str) {
     const VARIABLER_KEY: &str = "variabler";
-    if filen_ikke_er_json(filsti) {
+    if utils::filen_ikke_er_json(filsti) {
         return;
     }
 
@@ -130,15 +130,6 @@ fn finn_brukte_variabler(s: &str) -> HashSet<String> {
         }
     }
     brukte
-}
-
-fn filen_ikke_er_json(filsti: &str) -> bool {
-    let path = Path::new(filsti);
-    if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
-        eprintln!("🚫 Error: Filen '{}' har ikke .json filending.", filsti);
-        return true;
-    }
-    false
 }
 
 fn rapporter_valideringsfeil(feilmelding: &str, vars: &[String]) {

@@ -1,10 +1,11 @@
 use std::fs;
-use std::path::Path;
+
 use serde_json::Value;
+use crate::kommandoer::utils;
 
 pub fn rutinefil_variabler(filsti: &str) {
     const VARIABLER_KEY: &str = "variabler";
-    if filen_ikke_er_json(filsti) {
+    if utils::filen_ikke_er_json(filsti) {
         return;
     }
     let filinnhold = match fs::read_to_string(filsti) {
@@ -44,13 +45,4 @@ pub fn rutinefil_variabler(filsti: &str) {
             }
         }
     }
-}
-
-fn filen_ikke_er_json(filsti: &str) -> bool {
-    let path = Path::new(filsti);
-    if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
-        eprintln!("🚫 Error: Filen '{}' har ikke .json filending.", filsti);
-        return true;
-    }
-    false
 }
