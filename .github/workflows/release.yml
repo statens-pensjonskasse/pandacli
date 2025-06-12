@@ -55,7 +55,7 @@ jobs:
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
         with:
-          toTag: ${{ steps.version_tag.outputs.version }}
+          toTag: ${{ steps.get_new_version_tag.outputs.version_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -79,6 +79,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.version }}  # Henter spesifikk tag så man er sikker på at det er riktig versjon som bygges
 
       - uses: actions-rs/toolchain@v1
         with:
