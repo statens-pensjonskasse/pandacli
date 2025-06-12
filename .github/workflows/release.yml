@@ -30,11 +30,6 @@ jobs:
       - name: Installer cargo-release
         run: cargo install cargo-release --version 0.25.18
 
-      - name: Configure Git User
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"  
-
       - name: Finn versjonsbump fra commits
         id: version
         run: |
