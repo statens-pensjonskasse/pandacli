@@ -12,8 +12,10 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.kommando {
-        cli::Kommandoer::RutinefilValider { file_path } => {
-            rutinefil_valider(file_path);
+        cli::Kommandoer::RutinefilValider { file_paths } => {
+            for path in file_paths {
+                rutinefil_valider(path);
+            }
         },
         cli::Kommandoer::RutinefilVariabler {file_path} => {
             rutinefil_variabler(file_path)

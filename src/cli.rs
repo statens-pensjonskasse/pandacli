@@ -16,9 +16,9 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Kommandoer {
     #[clap(name = "valider")]
-    #[command(about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler")]
+    #[command(about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.")]
     RutinefilValider {
-        file_path: String,
+        file_paths: Vec<String>,
     },
 
     #[clap(name = "variabler")]
