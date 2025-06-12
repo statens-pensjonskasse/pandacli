@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
         version: ${{ steps.version_tag.outputs.version }}
-        changelog: ${{ steps.changelog.outputs.changelog }}
     permissions:
       contents: write
       packages: write
@@ -51,14 +50,6 @@ jobs:
           VERSION=$(cargo pkgid | sed 's/.*#//')
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Lag endringslogg
-        id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
-        with:
-          toTag: ${{ steps.get_new_version_tag.outputs.version_tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build:
     name: Cross-compile og last opp release
     needs: release
@@ -97,7 +88,6 @@ jobs:
         with:
           files: release/*
           tag_name: ${{ needs.release.outputs.version }} # Bruker versjonen fra release-jobben
-          body: ${{ needs.release.outputs.changelog }}
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
