@@ -41,14 +41,16 @@ pub fn rutinefil_valider(filsti: &str) {
 
             match value {
                 Value::String(s)=> {
-                    if s.is_empty() {
-                        udefinerte_variabler.push(format!("{}: \"\"", key));
+                    if s.starts_with("<") || s.ends_with(">") {
+                        udefinerte_variabler.push(format!("{}: {}", key, s));
                         inneholder_feil = true;
                     }
                 },
                 Value::Array(arr) => {
-                    if arr.is_empty() {
-                        udefinerte_variabler.push(format!("{}: []", key));
+
+                   if arr.is_empty() || (arr.len() == 1 && arr.get(0).and_then(Value::as_str).map_or(false, |s| s.starts_with('<') || s.ends_with('>')))
+                    {
+                        udefinerte_variabler.push(format!("{}: {}", key, serde_json::to_string(arr).unwrap_or_else(|_| "[]".to_string())));
                         inneholder_feil = true;
                     }
                 },
