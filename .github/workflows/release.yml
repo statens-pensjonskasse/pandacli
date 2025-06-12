@@ -50,11 +50,6 @@ jobs:
           fi
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
-      - name: Bump version, tag, og push
-        run: |
-          cargo release --no-publish --no-push --no-confirm --execute ${{ steps.version.outputs.bump }}
-          git push --follow-tags
-
       - name: Finn versjon
         id: version_tag
         run: |
