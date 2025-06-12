@@ -8,6 +8,8 @@ jobs:
   release:
     name: Bump versjon og bygg binaries
     runs-on: ubuntu-latest
+    outputs:
+        version: ${{ steps.version_tag.outputs.version }}
     permissions:
       contents: write
       packages: write
@@ -62,9 +64,6 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             ext: ""
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            ext: ""
           - target: aarch64-apple-darwin
             os: macos-latest
             ext: ""
@@ -73,14 +72,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-rust@v1
+      - uses: actions-rs/toolchain@v1
         with:
-          rust-version: stable
+          toolchain: stable
           target: ${{ matrix.target }}
-
-      - name: Install cross (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo install cross --version 0.2.5
 
       - name: Bygg binary
         run: |
@@ -95,5 +90,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: release/*
+          tag_name: ${{ needs.release.outputs.version }} # Use output from the release job
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
