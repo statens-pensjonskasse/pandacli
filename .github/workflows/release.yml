@@ -58,6 +58,8 @@ jobs:
   build:
     name: Cross-compile og last opp release
     needs: release
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
@@ -90,6 +92,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: release/*
-          tag_name: ${{ needs.release.outputs.version }} # Use output from the release job
+          tag_name: ${{ needs.release.outputs.version }} # Bruker versjonen fra release-jobben
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
