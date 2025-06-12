@@ -5,6 +5,8 @@ use crate::kommandoer::utils;
 
 pub fn rutinefil_valider(filsti: &str) {
     const VARIABLER_KEY: &str = "variabler";
+    println!("Kjører validering på filen '{}'.", &filsti);
+
     if utils::filen_ikke_er_json(filsti) {
         return;
     }
@@ -73,8 +75,6 @@ pub fn rutinefil_valider(filsti: &str) {
 
     if !inneholder_feil {
         println!("✅ Ingen feil funnet i rutinefilen '{}'.", filsti);
-    } else {
-        println!("🚫 Feil funnet i rutinefilen '{}'.", &filsti)
     }
 
     match manglende_variabler.as_slice() {
@@ -106,14 +106,8 @@ pub fn rutinefil_valider(filsti: &str) {
             );
         }
     }
+    println!();
 
-    if brukte_variabler.is_empty() {
-        println!("🚫 Ingen variabler brukt i rutinefilen '{}'.", filsti);
-    }
-
-    if definerte_variabler.is_empty() {
-        println!("🚫 Ingen variabler definert i rutinefilen '{}'.", filsti);
-    }
 }
 
 fn finn_brukte_variabler(s: &str) -> HashSet<String> {

@@ -8,6 +8,7 @@ pub fn rutinefil_variabler(filsti: &str) {
     if utils::filen_ikke_er_json(filsti) {
         return;
     }
+    
     let filinnhold = match fs::read_to_string(filsti) {
         Ok(innhold) => innhold,
         Err(e) => {
@@ -25,8 +26,7 @@ pub fn rutinefil_variabler(filsti: &str) {
     };
 
     let mut definerte_variabler = Vec::new();
-
-
+    
     if let Some(variabler) = json.get(VARIABLER_KEY).and_then(Value::as_object) {
         for (key, value) in variabler {
             definerte_variabler.push(format!("{} = {}", key, value));
@@ -38,7 +38,7 @@ pub fn rutinefil_variabler(filsti: &str) {
             println!("Ingen variabler er definert i rutinefilen '{}'.", filsti);
             return;
         },
-        variabler =>{
+        variabler => {
             println!("Følgende variabler er definert i '{}'.", filsti);
             for v in variabler {
             println!("   - {}", v);
