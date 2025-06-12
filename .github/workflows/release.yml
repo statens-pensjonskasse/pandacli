@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
         version: ${{ steps.version_tag.outputs.version }}
+        changelog: ${{ steps.changelog.outputs.changelog }}
     permissions:
       contents: write
       packages: write
@@ -46,7 +47,7 @@ jobs:
 
       - name: Bump version, tag, og push
         run: |
-          cargo release ${{ steps.version.outputs.bump }} --no-publish --no-push --execute
+          cargo release ${{ steps.version.outputs.bump }} --no-publish --no-push --execute --yes
           git push --follow-tags
 
       - name: Finn versjon
@@ -54,6 +55,14 @@ jobs:
         run: |
           VERSION=$(cargo pkgid | sed 's/.*#//')
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Lag endringslogg
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          tag: ${{ steps.version_tag.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     name: Cross-compile og last opp release
@@ -94,5 +103,7 @@ jobs:
         with:
           files: release/*
           tag_name: ${{ needs.release.outputs.version }} # Bruker versjonen fra release-jobben
+          body: ${{ needs.release.outputs.changelog }}
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
