@@ -26,4 +26,11 @@ pub enum Kommandoer {
     RutinefilVariabler {
         file_path: String,
     },
+
+    #[clap(name = "summer")]
+    #[command(about = "*IKKE IMPLEMENTERT* Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.")]
+    CsvSummering {
+        kolonne_nr: i8,
+        file_paths: Vec<String>,
+    },
 }

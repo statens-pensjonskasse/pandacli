@@ -2,23 +2,76 @@ use serde_json::Value;
 use std::collections::HashSet;
 use crate::kommandoer::io_utils;
 
-pub fn rutinefil_valider(filinnhold: &str) {
+pub struct ValidationResult {
+    pub manglende_variabler: Vec<String>,
+    pub udefinerte_variabler: Vec<String>,
+    pub ubrukte_variabler: Vec<String>,
+}
+
+pub fn rutinefil_valider(filsti: &str) {
+    println!("Kjører validering på filen '{}'.", filsti);
+
+    let filinnhold = match io_utils::les_filinnhold(filsti) {
+        Ok(innhold) => innhold,
+        Err(e) => {
+            eprintln!("Feil ved lesing av fil '{}': {}", filsti, e);
+            return;
+        }
+    };
+
+    match validering_innhold_rutinefil(&filinnhold) {
+        Ok(resultat) => {
+            if resultat.manglende_variabler.is_empty()
+                && resultat.udefinerte_variabler.is_empty()
+                && resultat.ubrukte_variabler.is_empty()
+            {
+                println!("✅ Validering fullført uten feil.");
+            } else {
+                if !resultat.manglende_variabler.is_empty() {
+                    rapporter_valideringsfeil(
+                        "❌ Følgende brukte variabler mangler i 'variabler', filen vil ikke fungere:",
+                        &resultat.manglende_variabler,
+                    );
+                }
+                if !resultat.udefinerte_variabler.is_empty() {
+                    rapporter_valideringsfeil(
+                        "❓ Følgende variabler har ikke blitt utfylt:",
+                        &resultat.udefinerte_variabler,
+                    );
+                }
+                if !resultat.ubrukte_variabler.is_empty() {
+                    rapporter_valideringsfeil(
+                        "⚠️ Følgende variabler er definert, men ikke brukt i filen:",
+                        &resultat.ubrukte_variabler,
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("❌ Validering feilet: {}", e);
+        }
+    }
+        println!(); // For spacing if desired
+}
+
+
+pub fn validering_innhold_rutinefil(filinnhold: &str) -> Result<ValidationResult, String> {
+    // Nøkkelen som brukes for variabler i JSON-filen
     const VARIABLER_KEY: &str = "variabler";
+
+    let json = io_utils::parse_json(filinnhold);
+    if json.is_err() {
+        return Err(format!("Klarte ikke parse JSON: {}", json.unwrap_err()));
+    }
 
     let mut definerte_variabler: HashSet<String> = HashSet::new();
     let mut udefinerte_variabler = Vec::new();
-    let mut definert_men_ikke_brukte_variabler = Vec::new();
+    let mut ubrukte_variabler = Vec::new();
     let mut manglende_variabler = Vec::new();
-    let mut inneholder_feil = false;
-
-    let json: Value = io_utils::parse_json(filinnhold).unwrap_or_else(|e| {
-        eprintln!("Klarte ikke parse JSON: {}", e);
-        std::process::exit(1);
-    });
 
     let brukte_variabler = finn_brukte_variabler(&filinnhold);
 
-    if let Some(variabler) = json.get(VARIABLER_KEY).and_then(Value::as_object) {
+    if let Some(variabler) = json.unwrap().get(VARIABLER_KEY).and_then(Value::as_object) {
         for (key, value) in variabler {
             definerte_variabler.insert(key.to_string());
 
@@ -30,78 +83,49 @@ pub fn rutinefil_valider(filinnhold: &str) {
                             key,
                             s
                         ));
-                        inneholder_feil = true;
                     }
                 }
                 Value::Array(arr) => {
                     if arr.is_empty()
                         || (arr.len() == 1
-                            && arr
-                                .get(0)
-                                .and_then(Value::as_str)
-                                .map_or(false, |s| s.starts_with('<') || s.ends_with('>')))
+                        && arr
+                        .get(0)
+                        .and_then(Value::as_str)
+                        .map_or(false, |s| s.starts_with('<') || s.ends_with('>')))
                     {
                         udefinerte_variabler.push(format!(
                             "{}: {}",
                             key,
                             serde_json::to_string(arr).unwrap_or_else(|_| "[]".to_string())
                         ));
-                        inneholder_feil = true;
                     }
                 }
                 _ => {}
             }
         }
+    } else {
+        Err("Ingen 'variabler' nøkkel funnet i JSON-filen.".to_string())?;
     }
 
     // Sjekker for brukte variabler som ikke er definert
     for var in &brukte_variabler {
         if !definerte_variabler.contains(var) {
             manglende_variabler.push(var.clone());
-            inneholder_feil = true;
         }
     }
 
     // Sjekker for definerte variabler som ikke er brukt
     for var in &definerte_variabler {
         if !brukte_variabler.contains(var) {
-            definert_men_ikke_brukte_variabler.push(var.clone());
-            inneholder_feil = true;
+            ubrukte_variabler.push(var.clone());
         }
     }
 
-    if !inneholder_feil {
-        println!("✅ Ingen feil funnet i rutinefilen.");
-    }
-
-    match manglende_variabler.as_slice() {
-        [] => {} // Ingen manglende variabler
-        variabler => {
-            rapporter_valideringsfeil(
-                "❌  Følgende brukte variabler mangler i 'variabler', filen vil ikke fungere:",
-                variabler,
-            );
-        }
-    }
-
-    match udefinerte_variabler.as_slice() {
-        [] => {} // Ingen udefinerte variabler
-        variabler => {
-            rapporter_valideringsfeil("❓  Følgende variabler har ikke blitt utfylt:", variabler);
-        }
-    }
-
-    match definert_men_ikke_brukte_variabler.as_slice() {
-        [] => {} // Ingen definerte variabler som ikke er brukt
-        variabler => {
-            rapporter_valideringsfeil(
-                "⚠️  Følgende variabler er definert men ikke brukt i rutinefilen:",
-                variabler,
-            );
-        }
-    }
-    println!();
-
+    Ok(ValidationResult {
+        manglende_variabler,
+        udefinerte_variabler,
+        ubrukte_variabler
+    })
 }
 
 fn finn_brukte_variabler(s: &str) -> HashSet<String> {
