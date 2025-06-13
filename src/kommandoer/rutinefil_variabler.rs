@@ -1,14 +1,10 @@
 use std::fs;
 
 use serde_json::Value;
-use crate::kommandoer::utils;
 
 pub fn rutinefil_variabler(filsti: &str) {
     const VARIABLER_KEY: &str = "variabler";
-    if utils::filen_ikke_er_json(filsti) {
-        return;
-    }
-    
+
     let filinnhold = match fs::read_to_string(filsti) {
         Ok(innhold) => innhold,
         Err(e) => {

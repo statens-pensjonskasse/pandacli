@@ -1,15 +1,9 @@
 use serde_json::Value;
 use std::collections::HashSet;
-use std::fs;
-use crate::kommandoer::utils;
+use crate::kommandoer::io_utils;
 
-pub fn rutinefil_valider(filsti: &str) {
+pub fn rutinefil_valider(filinnhold: &str) {
     const VARIABLER_KEY: &str = "variabler";
-    println!("Kjører validering på filen '{}'.", &filsti);
-
-    if utils::filen_ikke_er_json(filsti) {
-        return;
-    }
 
     let mut definerte_variabler: HashSet<String> = HashSet::new();
     let mut udefinerte_variabler = Vec::new();
@@ -17,21 +11,10 @@ pub fn rutinefil_valider(filsti: &str) {
     let mut manglende_variabler = Vec::new();
     let mut inneholder_feil = false;
 
-    let filinnhold = match fs::read_to_string(filsti) {
-        Ok(innhold) => innhold,
-        Err(e) => {
-            eprintln!("Klarte ikke lese filen: {}", e);
-            return;
-        }
-    };
-
-    let json: Value = match serde_json::from_str(&filinnhold) {
-        Ok(json) => json,
-        Err(e) => {
-            eprintln!("Ikke gyldig JSON format: {}", e);
-            return;
-        }
-    };
+    let json: Value = io_utils::parse_json(filinnhold).unwrap_or_else(|e| {
+        eprintln!("Klarte ikke parse JSON: {}", e);
+        std::process::exit(1);
+    });
 
     let brukte_variabler = finn_brukte_variabler(&filinnhold);
 
@@ -40,20 +23,32 @@ pub fn rutinefil_valider(filsti: &str) {
             definerte_variabler.insert(key.to_string());
 
             match value {
-                Value::String(s)=> {
+                Value::String(s) => {
                     if s.starts_with("<") || s.ends_with(">") {
-                        udefinerte_variabler.push(format!("{}: {}", key, s));
+                        udefinerte_variabler.push(format!(
+                            "{}: {}",
+                            key,
+                            s
+                        ));
                         inneholder_feil = true;
                     }
-                },
+                }
                 Value::Array(arr) => {
-
-                   if arr.is_empty() || (arr.len() == 1 && arr.get(0).and_then(Value::as_str).map_or(false, |s| s.starts_with('<') || s.ends_with('>')))
+                    if arr.is_empty()
+                        || (arr.len() == 1
+                            && arr
+                                .get(0)
+                                .and_then(Value::as_str)
+                                .map_or(false, |s| s.starts_with('<') || s.ends_with('>')))
                     {
-                        udefinerte_variabler.push(format!("{}: {}", key, serde_json::to_string(arr).unwrap_or_else(|_| "[]".to_string())));
+                        udefinerte_variabler.push(format!(
+                            "{}: {}",
+                            key,
+                            serde_json::to_string(arr).unwrap_or_else(|_| "[]".to_string())
+                        ));
                         inneholder_feil = true;
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -66,7 +61,7 @@ pub fn rutinefil_valider(filsti: &str) {
             inneholder_feil = true;
         }
     }
-    
+
     // Sjekker for definerte variabler som ikke er brukt
     for var in &definerte_variabler {
         if !brukte_variabler.contains(var) {
@@ -76,7 +71,7 @@ pub fn rutinefil_valider(filsti: &str) {
     }
 
     if !inneholder_feil {
-        println!("✅ Ingen feil funnet i rutinefilen '{}'.", filsti);
+        println!("✅ Ingen feil funnet i rutinefilen.");
     }
 
     match manglende_variabler.as_slice() {
@@ -88,14 +83,11 @@ pub fn rutinefil_valider(filsti: &str) {
             );
         }
     }
-    
+
     match udefinerte_variabler.as_slice() {
         [] => {} // Ingen udefinerte variabler
         variabler => {
-            rapporter_valideringsfeil(
-                "❓  Følgende variabler har ikke blitt utfylt:",
-                variabler,
-            );
+            rapporter_valideringsfeil("❓  Følgende variabler har ikke blitt utfylt:", variabler);
         }
     }
 
