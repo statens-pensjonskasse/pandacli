@@ -9,12 +9,12 @@ pub struct ValidationResult {
 }
 
 pub fn rutinefil_valider(filsti: &str) {
-    println!("Kjører validering på filen '{}'.", filsti);
+    println!("Validering filen '{}'.", filsti);
 
     let filinnhold = match io_utils::les_filinnhold(filsti) {
         Ok(innhold) => innhold,
         Err(e) => {
-            eprintln!("Feil ved lesing av fil '{}': {}", filsti, e);
+            eprintln!("Feil ved lesing av fil: {}", e);
             return;
         }
     };
@@ -25,7 +25,7 @@ pub fn rutinefil_valider(filsti: &str) {
                 && resultat.udefinerte_variabler.is_empty()
                 && resultat.ubrukte_variabler.is_empty()
             {
-                println!("✅ Validering fullført uten feil.");
+                println!("✅ Validering fullført, ingen feil funnet.");
             } else {
                 if !resultat.manglende_variabler.is_empty() {
                     rapporter_valideringsfeil(
