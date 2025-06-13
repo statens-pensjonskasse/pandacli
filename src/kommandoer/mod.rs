@@ -2,3 +2,4 @@
 pub mod rutinefil_validering;
 pub mod rutinefil_variabler;
 pub(crate) mod io_utils;
+pub mod summer_verdier;

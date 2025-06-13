@@ -7,6 +7,7 @@ use cli::Cli;
 
 use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::rutinefil_validering::rutinefil_valider;
+use kommandoer::summer_verdier::summer_verdier;
 
 fn main() {
     let cli = Cli::parse();
@@ -20,14 +21,11 @@ fn main() {
 
         cli::Kommandoer::RutinefilVariabler { file_path } => rutinefil_variabler(file_path),
 
-        #[warn(unused_variables)]
         cli::Kommandoer::CsvSummering {
-            kolonne_nr: _,
+            kolonne_nr,
             file_paths,
         } => {
-            for _path in file_paths {
-                eprintln!("Ikke implementert: Summering av CSV-filer.");
-            }
+            let _ = summer_verdier(kolonne_nr, file_paths); //ignorerer resultatet midlertidig
         }
     }
 }

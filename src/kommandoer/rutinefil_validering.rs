@@ -15,6 +15,7 @@ pub fn rutinefil_valider(filsti: &str) {
         Ok(innhold) => innhold,
         Err(e) => {
             eprintln!("Feil ved lesing av fil: {}", e);
+            println!();
             return;
         }
     };
@@ -51,7 +52,7 @@ pub fn rutinefil_valider(filsti: &str) {
             eprintln!("❌ Validering feilet: {}", e);
         }
     }
-        println!(); // For spacing if desired
+        println!();
 }
 
 
