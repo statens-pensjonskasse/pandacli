@@ -1,12 +1,12 @@
 use clap::{Parser, Subcommand};
 
-
 #[derive(Parser)]
-#[command( 
+#[command(
     name = "panda-cli",
     version = env!("CARGO_PKG_VERSION"),
-    about = "Kommandolinje-verktøy for bruk av premieleveranse",
-    long_about = None
+    about = "Kommandolinje-verktøy for bruk av premieleveranse. Skriv 'pnd <kommando> --help' for mer informasjon om en spesifikk kommando.",
+    long_about = "Dette verktøyet gir enkle kommandoer for å validere rutinefiler, \
+                      hente ut variabler fra rutinefiler og summere verdier i CSV-filer."
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -16,19 +16,36 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Kommandoer {
     #[clap(name = "valider")]
-    #[command(about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.")]
-    RutinefilValider {
-        file_paths: Vec<String>,
-    },
+    #[command(
+        about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.",
+        long_about = "Denne kommandoen validerer en eller flere rutinefiler ved å sjekke at alle variabler som er definert i filen også er brukt. \
+                      Rutinefilene må være i JSON-format og inneholde et 'variabler'-felt.",
+        after_help = "EKSEMPLER:\n  \
+                      pnd valider fil1.json fil2.json ...\n  \
+                      pnd valider *.json\n"
+    )]
+    RutinefilValider { file_paths: Vec<String> },
 
     #[clap(name = "variabler")]
-    #[command(about = "Finner og lister ut variabler i rutinefilen")]
-    RutinefilVariabler {
-        file_path: String,
-    },
+    #[command(
+        about = "Finner og lister ut variabler i rutinefilen",
+        long_about = "Henter ut alle variabler som er definert i en rutinefil.  Rutinefilen må være i JSON-format og inneholde et 'variabler'-felt.",
+        after_help = "EKSEMPLER:\n  \
+                      pnd variabler fil.json"
+    )]
+    RutinefilVariabler { file_path: String },
 
     #[clap(name = "summer")]
-    #[command(about = "*IKKE IMPLEMENTERT* Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.")]
+    #[command(
+        about = "Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.",
+        long_about = "Summerer verdier i en spesifisert kolonne (0-indeksert) for en eller flere CSV-filer. \
+                      Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz).\
+                      Kommandoen hopper over den første raden (header) i hver fil.",
+        after_help = "EKSEMPLER:\n  \
+                      pnd summer 0 fil1.csv fil2.csv.gz\n  \
+                      pnd summer 0 *.csv\n  \
+                      pnd summer 2 data/min_fil.csv"
+    )]
     CsvSummering {
         kolonne_nr: i8,
         file_paths: Vec<String>,
