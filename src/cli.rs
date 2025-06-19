@@ -38,16 +38,36 @@ pub enum Kommandoer {
     #[clap(name = "summer")]
     #[command(
         about = "Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.",
-        long_about = "Summerer verdier i en spesifisert kolonne (0-indeksert) for en eller flere CSV-filer. \
+        long_about = "Summerer verdier i en spesifisert kolonne (0-indeksert) for en eller flere CSV-filer, tomme felt blir håndtert som om de var 0. \
                       Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz).\
-                      Kommandoen hopper over den første raden (header) i hver fil.",
+                      Kommandoen varsler fra om det er forskjellige headere mellom filer.",
         after_help = "EKSEMPLER:\n  \
                       pnd summer 0 fil1.csv fil2.csv.gz\n  \
                       pnd summer 0 *.csv\n  \
                       pnd summer 2 data/min_fil.csv"
     )]
     CsvSummering {
-        kolonne_nr: i8,
+        kolonne_nr: usize,
         file_paths: Vec<String>,
     },
+
+    #[clap(name = "diff")]
+    #[command(
+        about = "*Ikke implementert* Sammenlikner to sett med filer for å finne forskjeller.",
+        long_about = "Denne kommandoen sammenligner to sett med filer og viser forskjeller mellom dem. \
+                          Den kan brukes til å finne endringer i innholdet i filene.",
+        after_help = "EKSEMPLER:\n  \
+                          pnd diff --venstre fil1.txt fil2.txt --høyre fil3.txt fil4.txt\n  \
+                          pnd diff --venstre original/*.txt --høyre nye/*.bak"
+    )]
+    Diff {
+        #[clap(long, value_name = "VENSTRE_FILER", required = true, num_args = 1.., help = "Første sett med filer som skal sammenlignes")]
+        venstre: Vec<String>,
+
+        #[clap(long, value_name = "HØYRE_FILER", required = true, num_args = 1.., help = "Andre sett med filer som skal sammenlignes")]
+        høyre: Vec<String>,
+
+        #[clap(long, value_name = "ignorerte_kolonner", num_args = 1.., help = "Kolonner i CSV-filer som skal ignoreres under sammenligning")]
+        ignorer: Vec<usize>,
+    }
 }
