@@ -20,8 +20,8 @@ pub fn parse_json(filinnhold: &str) -> Result<serde_json::Value, String> {
     match serde_json::from_str(&filinnhold) {
         Ok(json) => Ok(json),
         Err(e) => Err(format!(
-            "Klarte ikke parse JSON fra filen '{}': {}",
-            filinnhold, e
+            "Klarte ikke parse JSON fra filen: {}",
+            e
         ))
     }
 }

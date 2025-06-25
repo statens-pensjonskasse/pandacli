@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 #[command(
     name = "panda-cli",
     version = env!("CARGO_PKG_VERSION"),
-    about = "Kommandolinje-verktøy for bruk av premieleveranse. Skriv 'pnd <kommando> --help' for mer informasjon om en spesifikk kommando.",
+    about = "Kommandolinje-verktøy for bruk av premieleveranse. Skriv 'pcli <kommando> --help' for mer informasjon om en spesifikk kommando.",
     long_about = "Dette verktøyet gir enkle kommandoer for å validere rutinefiler, \
                       hente ut variabler fra rutinefiler og summere verdier i CSV-filer."
 )]
@@ -15,14 +15,23 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Kommandoer {
+    #[clap(name = "rnd")]
+    #[command(
+        about = "Velger en tilfeldig verdi fra input.",
+        long_about = "Tar en liste med verdier som input, og velger en tilfeldig verdi.",
+        after_help = "EKSEMPLER:\n  \
+                      pcli rnd a b c d e f ..."
+    )]
+    VelgTilfeldig { verdier: Vec<String> },
+    
     #[clap(name = "valider")]
     #[command(
         about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.",
         long_about = "Denne kommandoen validerer en eller flere rutinefiler ved å sjekke at alle variabler som er definert i filen også er brukt. \
                       Rutinefilene må være i JSON-format og inneholde et 'variabler'-felt.",
         after_help = "EKSEMPLER:\n  \
-                      pnd valider fil1.json fil2.json ...\n  \
-                      pnd valider *.json\n"
+                      pcli valider fil1.json fil2.json ...\n  \
+                      pcli valider *.json\n"
     )]
     RutinefilValider { file_paths: Vec<String> },
 
@@ -31,7 +40,7 @@ pub enum Kommandoer {
         about = "Finner og lister ut variabler i rutinefilen",
         long_about = "Henter ut alle variabler som er definert i en rutinefil.  Rutinefilen må være i JSON-format og inneholde et 'variabler'-felt.",
         after_help = "EKSEMPLER:\n  \
-                      pnd variabler fil.json"
+                      pcli variabler fil.json"
     )]
     RutinefilVariabler { file_path: String },
 
@@ -42,9 +51,9 @@ pub enum Kommandoer {
                       Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz).\
                       Kommandoen varsler fra om det er forskjellige headere mellom filer.",
         after_help = "EKSEMPLER:\n  \
-                      pnd summer 0 fil1.csv fil2.csv.gz\n  \
-                      pnd summer 0 *.csv\n  \
-                      pnd summer 2 data/min_fil.csv"
+                      pcli summer 0 fil1.csv fil2.csv.gz\n  \
+                      pcli summer 0 *.csv\n  \
+                      pcli summer 2 data/min_fil.csv"
     )]
     CsvSummering {
         kolonne_nr: usize,
@@ -57,8 +66,8 @@ pub enum Kommandoer {
         long_about = "Denne kommandoen sammenligner to sett med filer og viser forskjeller mellom dem. \
                           Den kan brukes til å finne endringer i innholdet i filene.",
         after_help = "EKSEMPLER:\n  \
-                          pnd diff --venstre fil1.txt fil2.txt --høyre fil3.txt fil4.txt\n  \
-                          pnd diff --venstre original/*.txt --høyre nye/*.bak"
+                          pcli diff --venstre fil1.txt fil2.txt --høyre fil3.txt fil4.txt\n  \
+                          pcli diff --venstre original/*.txt --høyre nye/*.bak"
     )]
     Diff {
         #[clap(long, value_name = "VENSTRE_FILER", required = true, num_args = 1.., help = "Første sett med filer som skal sammenlignes")]

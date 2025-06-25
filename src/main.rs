@@ -9,11 +9,17 @@ use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::diff_filer::diff_filer;
 use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
+use kommandoer::velg_tilfeldig::velg_tilfeldig;
 
 fn main() {
     let cli = Cli::parse();
 
     match &cli.kommando {
+
+        cli::Kommandoer::VelgTilfeldig {verdier} => {
+            velg_tilfeldig(verdier.clone());
+        }
+
         cli::Kommandoer::RutinefilValider { file_paths } => {
             for path in file_paths {
                 rutinefil_valider(path);
@@ -69,7 +75,7 @@ fn main() {
         } => {
             let _ = diff_filer(venstre.to_vec(), høyre.to_vec(), ignorer.to_vec()); //ignorerer resultatet midlertidig
             eprintln!("Diff kommando er ikke implementert ennå.");
-            eprintln!("Bruk 'pnd --help' for mer informasjon om tilgjengelige kommandoer.");
+            eprintln!("Bruk 'pcli --help' for mer informasjon om tilgjengelige kommandoer.");
         }
     }
 }
