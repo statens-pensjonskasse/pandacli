@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod kommandoer;
+mod utils;
 
 use clap::Parser;
 use cli::Cli;
@@ -35,14 +36,15 @@ fn main() {
             Ok((antall_filer, sum, headere)) => {
 
                 if headere.len() > 1 {
-                    println!("Summerer beløp fra {} filer, sum: {}", antall_filer, sum);
+                    println!("Summerer beløp fra {} filer, sum: {}", antall_filer, utils::formater_tall(sum));
                     println!(
                         "Fant {} forskjellige headere for kolonne {}. Summert koolo fra {} filer, sum: {}",
                         headere.len(),
                         kolonne_nr + 1,
                         antall_filer,
-                        sum
+                        utils::formater_tall(sum)
                     );
+
                     println!("Headere og deres respektive filer:");
                     for (header, filer) in &headere {
                         let file_list = if filer.len() > 5 {
@@ -61,7 +63,8 @@ fn main() {
                                  .keys()
                                  .next()
                                  .unwrap_or(&"Ingen header".to_string()),
-                             sum);
+                             utils::formater_tall(sum)
+                    );
                 }
             }
             Err(e) => {
