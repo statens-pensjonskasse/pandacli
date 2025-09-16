@@ -38,7 +38,7 @@ fn main() {
                 if headere.len() > 1 {
                     println!("Summerer beløp fra {} filer, sum: {}", antall_filer, utils::formater_tall(sum));
                     println!(
-                        "Fant {} forskjellige headere for kolonne {}. Summert koolo fra {} filer, sum: {}",
+                        "Fant {} forskjellige headere for kolonne {}. Summert kolonner fra {} filer, sum: {}",
                         headere.len(),
                         kolonne_nr + 1,
                         antall_filer,
