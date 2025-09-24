@@ -5,3 +5,4 @@ pub(crate) mod io_utils;
 pub mod summer_verdier;
 pub mod diff_filer;
 pub mod velg_tilfeldig;
+pub mod operasjoner;

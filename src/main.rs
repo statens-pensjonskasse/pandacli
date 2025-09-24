@@ -11,6 +11,8 @@ use kommandoer::diff_filer::diff_filer;
 use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
 use kommandoer::velg_tilfeldig::velg_tilfeldig;
+use kommandoer::operasjoner::operasjoner;
+
 
 fn main() {
     let cli = Cli::parse();
@@ -79,6 +81,13 @@ fn main() {
             let _ = diff_filer(venstre.to_vec(), høyre.to_vec(), ignorer.to_vec()); //ignorerer resultatet midlertidig
             eprintln!("Diff kommando er ikke implementert ennå.");
             eprintln!("Bruk 'pcli --help' for mer informasjon om tilgjengelige kommandoer.");
+        },
+
+        cli::Kommandoer::Operasjoner {
+            file_path
+        } => {
+           let result = operasjoner(file_path);
+            eprintln!("{}", result.unwrap());
         }
     }
 }

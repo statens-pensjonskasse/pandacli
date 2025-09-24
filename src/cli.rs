@@ -23,7 +23,7 @@ pub enum Kommandoer {
                       pcli rnd a b c d e f ..."
     )]
     VelgTilfeldig { verdier: Vec<String> },
-    
+
     #[clap(name = "valider")]
     #[command(
         about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.",
@@ -78,5 +78,14 @@ pub enum Kommandoer {
 
         #[clap(long, value_name = "ignorerte_kolonner", num_args = 1.., help = "Kolonner i CSV-filer som skal ignoreres under sammenligning")]
         ignorer: Vec<usize>,
-    }
+    },
+
+    #[clap(name = "operasjoner")]
+    #[command(
+        about = "Operasjoner",
+        long_about = "Printer hvor langt en kjøring har kommet ved å sjekke antall handlinger som er gjennomført.",
+        after_help = "EKSEMPLER:\n  \
+                      pcli operasjoner operasjoner.log"
+    )]
+    Operasjoner {file_path: String },
 }
