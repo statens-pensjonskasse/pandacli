@@ -8,6 +8,7 @@ use cli::Cli;
 
 use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::diff_filer::diff_filer;
+use kommandoer::header::header;
 use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
 use kommandoer::velg_tilfeldig::velg_tilfeldig;
@@ -88,6 +89,18 @@ fn main() {
         } => {
            let result = operasjoner(file_path);
             eprintln!("{}", result.unwrap());
+        },
+
+        cli::Kommandoer::Header {
+            file_path
+        } => {
+           let result = header(file_path);
+
+
+            let unwrapped = result.unwrap();
+
+            eprintln!("Fant {} headere:", unwrapped.len());
+            eprintln!("{}", unwrapped.join("\n"));
         }
     }
 }

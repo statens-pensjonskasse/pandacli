@@ -49,7 +49,8 @@ pub enum Kommandoer {
         about = "Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.",
         long_about = "Summerer verdier i en spesifisert kolonne (0-indeksert) for en eller flere CSV-filer, tomme felt blir håndtert som om de var 0. \
                       Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz).\
-                      Kommandoen varsler fra om det er forskjellige headere mellom filer.",
+                      Kommandoen varsler fra om det er forskjellige headere mellom filer.\
+                      NB! Er du usikker på hvilken kolonne du skal bruke, kan du bruke kommandoen 'pcli header <filnavn>' for å liste opp headere med indekser.",
         after_help = "EKSEMPLER:\n  \
                       pcli summer 0 fil1.csv fil2.csv.gz\n  \
                       pcli summer 0 *.csv\n  \
@@ -88,4 +89,13 @@ pub enum Kommandoer {
                       pcli operasjoner operasjoner.log"
     )]
     Operasjoner {file_path: String },
+
+    #[clap(name = "header")]
+    #[command(
+        about = "Header",
+        long_about = "Printer ut headere til en csv fil, med index for hvert felt.",
+        after_help = "EKSEMPLER:\n  \
+                      pcli header fil.csv"
+    )]
+    Header {file_path: String },
 }

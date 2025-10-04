@@ -1,6 +1,6 @@
 [package]
 name = "pandacli"
-version = "0.0.11"
+version = "0.0.12"
 edition = "2024"
 
 [[bin]]
@@ -17,3 +17,4 @@ rand = "0.9.1"
 num-format = "0.4"
 rayon = "1.10"
 indicatif = "0.18.0"
+tempfile = "3.23.0"
