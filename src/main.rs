@@ -13,7 +13,8 @@ use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
 use kommandoer::velg_tilfeldig::velg_tilfeldig;
 use kommandoer::operasjoner::operasjoner;
-
+use uuid::Uuid;
+use crate::kommandoer::panda_murmur::panda_murmur;
 
 fn main() {
     let cli = Cli::parse();
@@ -94,13 +95,25 @@ fn main() {
         cli::Kommandoer::Header {
             file_path
         } => {
-           let result = header(file_path);
+            let result = header(file_path);
 
 
             let unwrapped = result.unwrap();
 
             eprintln!("Fant {} headere:", unwrapped.len());
             eprintln!("{}", unwrapped.join("\n"));
+        },
+
+        cli::Kommandoer::Filpartisjon {
+            id
+        } => {
+            let result = panda_murmur(id);
+            let unwrapped = result.unwrap();
+
+            eprintln!("Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
+                      unwrapped,
+                      unwrapped,
+                      Uuid::new_v4());
         }
     }
 }

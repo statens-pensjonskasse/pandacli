@@ -7,3 +7,4 @@ pub mod diff_filer;
 pub mod velg_tilfeldig;
 pub mod operasjoner;
 pub mod header;
+pub mod panda_murmur;

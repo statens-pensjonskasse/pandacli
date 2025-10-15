@@ -83,7 +83,7 @@ pub enum Kommandoer {
 
     #[clap(name = "operasjoner")]
     #[command(
-        about = "Operasjoner",
+        about = "Finner hvor langt rutinefilen har kommet ved å sjekke antall handlinger som er gjennomført.",
         long_about = "Printer hvor langt en kjøring har kommet ved å sjekke antall handlinger som er gjennomført.",
         after_help = "EKSEMPLER:\n  \
                       pcli operasjoner operasjoner.log"
@@ -92,10 +92,19 @@ pub enum Kommandoer {
 
     #[clap(name = "header")]
     #[command(
-        about = "Header",
+        about = "Printer ut headere til en csv fil, med index for hvert felt.",
         long_about = "Printer ut headere til en csv fil, med index for hvert felt.",
         after_help = "EKSEMPLER:\n  \
                       pcli header fil.csv"
     )]
     Header {file_path: String },
+    #[clap(name = "filpartisjon")]
+    #[command(
+        about = "Printer ut hvilken partisjon et fødselsnummer eller en ID tilhører.",
+        long_about = "Ved å bruke samme murmur hashing som tidsserie-lib bruker, kan man finne ut hvilke filpartisjon ett medlem havner i.\
+        Dette kan brukes til å legge medlemmer i en filpartisjon manuelt, eller ved å opprette smoke tester i cucumber for prosjekter som har trenger definert filpartisjon.",
+        after_help = "EKSEMPLER:\n  \
+                      pcli filpartisjon D9F47A69-E85E-42A0-9686-151835F38ACB"
+    )]
+    Filpartisjon {id: String },
 }

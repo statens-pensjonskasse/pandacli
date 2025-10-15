@@ -1,6 +1,6 @@
 [package]
 name = "pandacli"
-version = "0.0.12"
+version = "0.0.13"
 edition = "2024"
 
 [[bin]]
@@ -18,3 +18,4 @@ num-format = "0.4"
 rayon = "1.10"
 indicatif = "0.18.0"
 tempfile = "3.23.0"
+uuid = { version = "1.4", features = ["v4"] }
