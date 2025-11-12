@@ -40,7 +40,11 @@ fn main() {
             Ok((antall_filer, sum, headere)) => {
 
                 if headere.len() > 1 {
-                    println!("Summerer beløp fra {} filer, sum: {}", antall_filer, utils::formater_tall(sum));
+                    println!(
+                        "Summerer beløp fra {} filer, sum: {}",
+                        antall_filer,
+                        utils::formater_tall(sum)
+                    );
                     println!(
                         "Fant {} forskjellige headere for kolonne {}. Summert kolonner fra {} filer, sum: {}",
                         headere.len(),
@@ -61,13 +65,11 @@ fn main() {
                         println!("  - '{}': {}", header, file_list);
                     }
                 } else {
-                    println!("Summerer fra {} filer med header '{}', sum: {}",
-                             antall_filer,
-                             headere
-                                 .keys()
-                                 .next()
-                                 .unwrap_or(&"Ingen header".to_string()),
-                             utils::formater_tall(sum)
+                    println!(
+                        "Summerer fra {} filer med header '{}', sum: {}",
+                        antall_filer,
+                        headere.keys().next().unwrap_or(&"Ingen header".to_string()),
+                        utils::formater_tall(sum)
                     );
                 }
             }
@@ -83,20 +85,24 @@ fn main() {
             let _ = diff_filer(venstre.to_vec(), høyre.to_vec(), ignorer.to_vec()); //ignorerer resultatet midlertidig
             eprintln!("Diff kommando er ikke implementert ennå.");
             eprintln!("Bruk 'pcli --help' for mer informasjon om tilgjengelige kommandoer.");
-        },
+        }
 
-        cli::Kommandoer::Operasjoner {
-            file_path
-        } => {
-           let result = operasjoner(file_path);
-            eprintln!("{}", result.unwrap());
-        },
+        cli::Kommandoer::Operasjoner { file_path, status } => {
+            let result = operasjoner(file_path);
 
-        cli::Kommandoer::Header {
-            file_path
-        } => {
+            if *status == true {
+                let status_str = if result.is_ok() { "OK" } else { "FEILET" };
+                eprintln!("{}", status_str);
+            } else {
+                match result {
+                    Ok(value) => eprintln!("{}", value),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+        }
+
+        cli::Kommandoer::Header { file_path } => {
             let result = header(file_path);
-
 
             let unwrapped = result.unwrap();
 

@@ -86,9 +86,14 @@ pub enum Kommandoer {
         about = "Finner hvor langt rutinefilen har kommet ved å sjekke antall handlinger som er gjennomført.",
         long_about = "Printer hvor langt en kjøring har kommet ved å sjekke antall handlinger som er gjennomført.",
         after_help = "EKSEMPLER:\n  \
-                      pcli operasjoner operasjoner.log"
+                  pcli operasjoner operasjoner.log\n  \
+                  pcli operasjoner operasjoner.log --status\n  \
+                  pcli operasjoner operasjoner.log -s"
     )]
-    Operasjoner {file_path: String },
+    Operasjoner {file_path: String,
+        #[clap(short, long, help = "Vis kun status for kjøringen. OK hvis kjøringen er ferdig eller kjører, FEILET hvis det oppstod en feil.")]
+        status: bool,
+    },
 
     #[clap(name = "header")]
     #[command(
