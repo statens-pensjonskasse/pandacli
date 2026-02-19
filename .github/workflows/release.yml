@@ -112,20 +112,51 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : "${BRANCH:?BRANCH env var not set (did 'Lag release branch lokalt' run?)}"
+          
           VERSION="$(cargo pkgid | sed 's/.*#//')"
+          RELEASE_BRANCH="chore/release-v$VERSION"
+          
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "RELEASE_BRANCH=chore/release-v$VERSION" >> "$GITHUB_ENV"
-          git branch -m "$BRANCH" "chore/release-v$VERSION"
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> "$GITHUB_ENV"
+          
+          git branch -m "$BRANCH" "$RELEASE_BRANCH"
 
-      - name: Lag signed release commit (and push)
+      - name: Forsikrer om at release branch finnes på remote (for signed commit step)
+        if: steps.bump.outputs.should_release == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = process.env.RELEASE_BRANCH;
+            
+            if (!branch) {
+              throw new Error("RELEASE_BRANCH env var is not set");
+            }
+            
+            const baseRef = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            const sha = baseRef.data.object.sha;
+            
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+              core.info(`Branch already exists: ${branch}`);
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              core.info(`Creating branch ${branch} at ${sha}`);
+              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha });
+            }
+
+      - name: Lag signed release commit (og push)
         if: steps.bump.outputs.should_release == 'true'
         id: signed_commit
-        uses: statens-pensjonskasse/gha-create-signed-commit@9952bb63c5cf19fd075e319bd25e5fd03a261b0a
+        uses: statens-pensjonskasse/gha-create-signed-commit@9952bb63c5cf19fd075e319bd25e5fd03a261b0a # v0.1.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ env.RELEASE_BRANCH }}
           message: "chore(release): v${{ steps.ver.outputs.version }}"
-          # limit what goes into the commit (recommended)
+
           paths: |
             Cargo.toml
             Cargo.lock
