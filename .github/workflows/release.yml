@@ -60,7 +60,7 @@ jobs:
       - name: Lag signed release commit (and push)
         if: steps.bump.outputs.should_release == 'true'
         id: signed_commit
-        uses: statens-pensjonskasse/gha-create-signed-commit@COMMIT_SHA
+        uses: statens-pensjonskasse/gha-create-signed-commit@9952bb63c5cf19fd075e319bd25e5fd03a261b0a
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ env.RELEASE_BRANCH }}
