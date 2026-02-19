@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  propose_release_pr:
+  lag_release_pr:
     runs-on: ubuntu-latest
 
     steps:
@@ -131,14 +131,19 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const branch = process.env.RELEASE_BRANCH;
+
+            core.info(`Repo: ${owner}/${repo}`);
+            core.info(`Actor: ${context.actor}`);
             
-            if (!branch) {
-              throw new Error("RELEASE_BRANCH env var is not set");
-            }
-            
-            const baseRef = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            if (!branch) throw new Error("RELEASE_BRANCH env var is not set");
+
+            const { data: repoInfo } = await github.rest.repos.get({ owner, repo });
+            const targetBranch = repoInfo.default_branch;
+            core.info(`Default branch is: ${targetBranch}`);
+
+            const baseRef = await github.rest.git.getRef({ owner, repo, ref: `heads/${targetBranch}` });
             const sha = baseRef.data.object.sha;
-            
+
             try {
               await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
               core.info(`Branch already exists: ${branch}`);
