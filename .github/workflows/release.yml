@@ -25,8 +25,68 @@ jobs:
           toolchain: stable
           override: true
 
-      # (Your bump detection step goes here: sets should_release + bump)
-      # id: bump
+      - name: Finn versjonsbump fra commits (skip release commits)
+        id: bump
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Finn siste tag (om finnes)
+          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+
+          # Hvis HEAD er en release-commit: ikke lag ny release
+          HEAD_SUBJECT="$(git log -1 --pretty=format:%s)"
+          if echo "$HEAD_SUBJECT" | grep -qE '^chore\(release\):'; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Hent commits siden siste tag (eller hele historikken hvis ingen tag)
+          if [ -n "$LAST_TAG" ]; then
+            RANGE="${LAST_TAG}..HEAD"
+            SUBJECTS="$(git log $RANGE --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
+            LOG="$(git log $RANGE --pretty=format:'%s%n%b%n----END----')"
+          else
+            SUBJECTS="$(git log --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
+            LOG="$(git log --pretty=format:'%s%n%b%n----END----')"
+          fi
+
+          # Hvis ingen "reelle" commits igjen → ingen release
+          if [ -z "$SUBJECTS" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BUMP="none"
+
+          # Major: feat! / feat(scope)! eller BREAKING CHANGE
+          if echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?!:'; then
+            BUMP="major"
+          elif echo "$LOG" | grep -qE 'BREAKING CHANGE'; then
+            BUMP="major"
+          # Minor: feat / feat(scope)
+          elif echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?:'; then
+            BUMP="minor"
+          # Patch: fix/perf (med scope)
+          elif echo "$SUBJECTS" | grep -qE '^(fix|perf)(\(.+\))?:'; then
+            BUMP="patch"
+          fi
+
+          if [ "$BUMP" = "none" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
+
+      - name: Sjekk bump status
+        shell: bash
+        run: |
+          echo "skal release='${{ steps.bump.outputs.should_release }}'"
+          echo "bump='${{ steps.bump.outputs.bump }}'"
 
       - name: Lag release branch lokalt
         if: steps.bump.outputs.should_release == 'true'
