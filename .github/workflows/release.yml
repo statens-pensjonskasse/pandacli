@@ -153,6 +153,16 @@ jobs:
               await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha });
             }
 
+      - name: Debug does remote branch exist?
+        if: steps.bump.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH"
+          gh api "repos/${{ github.repository }}/git/ref/heads/$RELEASE_BRANCH" || true
+
       - name: Lag signed release commit (og push)
         if: steps.bump.outputs.should_release == 'true'
         id: signed_commit
