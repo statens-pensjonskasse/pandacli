@@ -7,15 +7,12 @@ on:
 
 permissions:
   contents: write
-  packages: write
+  pull-requests: write
 
 jobs:
-  release:
-    name: Bump versjon og tag
+  propose_release_pr:
+    name: Lag release PR (ingen direkte push til main)
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version_tag.outputs.version }}
-      should_release: ${{ steps.bump.outputs.should_release }}
 
     steps:
       - name: Checkout
@@ -29,16 +26,14 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Finn versjonsbump fra commits (skip release commits)
+      - name: Bestemme hvilken versjon som skal bumpes (Conventional Commits, skip release commits)
         id: bump
         shell: bash
         run: |
           set -euo pipefail
 
-          # Finn siste tag (om finnes)
           LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
 
-          # Hvis HEAD er en release-commit: ikke lag ny release
           HEAD_SUBJECT="$(git log -1 --pretty=format:%s)"
           if echo "$HEAD_SUBJECT" | grep -qE '^chore\(release\):'; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
@@ -46,7 +41,6 @@ jobs:
             exit 0
           fi
 
-          # Hent commits siden siste tag (eller hele historikken hvis ingen tag)
           if [ -n "$LAST_TAG" ]; then
             RANGE="${LAST_TAG}..HEAD"
             SUBJECTS="$(git log $RANGE --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
@@ -56,7 +50,6 @@ jobs:
             LOG="$(git log --pretty=format:'%s%n%b%n----END----')"
           fi
 
-          # Hvis ingen "reelle" commits igjen → ingen release
           if [ -z "$SUBJECTS" ]; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
             echo "bump=none" >> "$GITHUB_OUTPUT"
@@ -64,16 +57,12 @@ jobs:
           fi
 
           BUMP="none"
-
-          # Major: feat! / feat(scope)! eller BREAKING CHANGE
           if echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?!:'; then
             BUMP="major"
           elif echo "$LOG" | grep -qE 'BREAKING CHANGE'; then
             BUMP="major"
-          # Minor: feat / feat(scope)
           elif echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?:'; then
             BUMP="minor"
-          # Patch: fix / fix(scope) (og perf/perf(scope) hvis du vil)
           elif echo "$SUBJECTS" | grep -qE '^(fix|perf)(\(.+\))?:'; then
             BUMP="patch"
           fi
@@ -94,78 +83,24 @@ jobs:
           cargo install cargo-edit --locked
           cargo set-version --bump "${{ steps.bump.outputs.bump }}"
 
-      - name: Commit og tag
+      - name: Les version
         if: steps.bump.outputs.should_release == 'true'
+        id: ver
         shell: bash
         run: |
           set -euo pipefail
           VERSION="$(cargo pkgid | sed 's/.*#//')"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Cargo.toml Cargo.lock || true
-          git commit -m "chore(release): v${VERSION}"
-          git tag "v${VERSION}"
-          git push
-          git push --tags
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Sett version output
-        id: version_tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${{ steps.bump.outputs.should_release }}" = "true" ]; then
-            VERSION="$(cargo pkgid | sed 's/.*#//')"
-            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=" >> "$GITHUB_OUTPUT"
-          fi
-
-  build:
-    name: Cross-compile og last opp release
-    needs: release
-    if: needs.release.outputs.should_release == 'true'
-    strategy:
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            ext: ""
-            artifact_name_suffix: "linux-x86_64"
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            ext: ""
-            artifact_name_suffix: "macos-aarch64"
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
+      - name: Lag eller oppdater release PR
+        if: steps.bump.outputs.should_release == 'true'
+        uses: peter-evans/create-pull-request@v7
         with:
-          fetch-depth: 0
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-
-      - name: Bygg binary
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo build --release --target "${{ matrix.target }}"
-
-      - name: Gi nytt navn og forbered artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release
-          cp "target/${{ matrix.target }}/release/pcli" "release/pcli-${{ matrix.artifact_name_suffix }}${{ matrix.ext }}"
-
-      - name: Last opp release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release/*
-          tag_name: ${{ needs.release.outputs.version }}
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/release-v${{ steps.ver.outputs.version }}
+          title: "chore(release): v${{ steps.ver.outputs.version }}"
+          commit-message: "chore(release): v${{ steps.ver.outputs.version }}"
+          body: |
+            Automated release PR for v${{ steps.ver.outputs.version }}.
+            Merge this PR to trigger tagging + GitHub Release + binaries upload.
+          labels: release
+          delete-branch: true
