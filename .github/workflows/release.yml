@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   propose_release_pr:
-    name: Lag release PR (ingen direkte push til main)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,56 +25,20 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Bestemme hvilken versjon som skal bumpes (Conventional Commits, skip release commits)
-        id: bump
+      # (Your bump detection step goes here: sets should_release + bump)
+      # id: bump
+
+      - name: Lag release branch lokalt
+        if: steps.bump.outputs.should_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
+          # compute version after bump later, but branch name can be temporary first
+          BRANCH="chore/release"
+          git switch -c "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
-          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-
-          HEAD_SUBJECT="$(git log -1 --pretty=format:%s)"
-          if echo "$HEAD_SUBJECT" | grep -qE '^chore\(release\):'; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "bump=none" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ -n "$LAST_TAG" ]; then
-            RANGE="${LAST_TAG}..HEAD"
-            SUBJECTS="$(git log $RANGE --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
-            LOG="$(git log $RANGE --pretty=format:'%s%n%b%n----END----')"
-          else
-            SUBJECTS="$(git log --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
-            LOG="$(git log --pretty=format:'%s%n%b%n----END----')"
-          fi
-
-          if [ -z "$SUBJECTS" ]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "bump=none" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          BUMP="none"
-          if echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?!:'; then
-            BUMP="major"
-          elif echo "$LOG" | grep -qE 'BREAKING CHANGE'; then
-            BUMP="major"
-          elif echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?:'; then
-            BUMP="minor"
-          elif echo "$SUBJECTS" | grep -qE '^(fix|perf)(\(.+\))?:'; then
-            BUMP="patch"
-          fi
-
-          if [ "$BUMP" = "none" ]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-          fi
-
-          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
-
-      - name: Bump versjon i Cargo.toml
+      - name: Bump versjon filer
         if: steps.bump.outputs.should_release == 'true'
         shell: bash
         run: |
@@ -83,7 +46,7 @@ jobs:
           cargo install cargo-edit --locked
           cargo set-version --bump "${{ steps.bump.outputs.bump }}"
 
-      - name: Les version
+      - name: Les version og sett endelig branch name
         if: steps.bump.outputs.should_release == 'true'
         id: ver
         shell: bash
@@ -91,16 +54,37 @@ jobs:
           set -euo pipefail
           VERSION="$(cargo pkgid | sed 's/.*#//')"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_BRANCH=chore/release-v$VERSION" >> "$GITHUB_ENV"
+          git branch -m "$BRANCH" "chore/release-v$VERSION"
 
-      - name: Lag eller oppdater release PR
+      - name: Lag signed release commit (and push)
         if: steps.bump.outputs.should_release == 'true'
-        uses: peter-evans/create-pull-request@v7
+        id: signed_commit
+        uses: statens-pensjonskasse/gha-create-signed-commit@COMMIT_SHA
         with:
-          branch: chore/release-v${{ steps.ver.outputs.version }}
-          title: "chore(release): v${{ steps.ver.outputs.version }}"
-          commit-message: "chore(release): v${{ steps.ver.outputs.version }}"
-          body: |
-            Automated release PR for v${{ steps.ver.outputs.version }}.
-            Merge this PR to trigger tagging + GitHub Release + binaries upload.
-          labels: release
-          delete-branch: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.RELEASE_BRANCH }}
+          message: "chore(release): v${{ steps.ver.outputs.version }}"
+          # limit what goes into the commit (recommended)
+          paths: |
+            Cargo.toml
+            Cargo.lock
+          push: true
+
+      - name: Lag eller oppdater PR
+        if: steps.bump.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Create PR if it doesn't exist; otherwise update is automatic since branch is pushed
+          if gh pr view "$RELEASE_BRANCH" >/dev/null 2>&1; then
+            echo "PR already exists for $RELEASE_BRANCH"
+          else
+            gh pr create \
+              --head "$RELEASE_BRANCH" \
+              --base "main" \
+              --title "chore(release): v${{ steps.ver.outputs.version }}" \
+              --body "Automated release PR for v${{ steps.ver.outputs.version }}."
+          fi
