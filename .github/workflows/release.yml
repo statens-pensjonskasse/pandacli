@@ -187,7 +187,7 @@ jobs:
       - name: Lag eller oppdater PR
         if: steps.bump.outputs.should_release == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
