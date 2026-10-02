@@ -28,7 +28,8 @@ A») framfor å genereres automatisk.
 | 6 | **Strukturfeil** – manglende `operasjoner`/`handling`, `gruppe` uten `gruppeAv`, `forHver` uten `elementer`/`utfør_handlinger`, `deploy_batch` uten `batcher[].navn/versjon` | `BatchOrkestreringApp`, `UtledHandlinger`, `VariabelflettingJson`, `DeployBatchInstruksjonOversetter` |
 | 7 | **Feil bruk av listevariabel** – array-variabel må brukes som egen streng `"${x}"` | `VariabelflettingJson.flettVariabler` (array-grenen matcher `"${x}"`) |
 | 8 | **Ugyldig versjonsformat** på `gyldigVersjon` / `metainfo.støttetAvPaOrkBa01FraVersjon` | `Versjon` (regex `\d+(\.\d+)*(-SNAPSHOT)?`) |
-| 9 | **Feil `metainfo.mal`** – filnavnet i `mal` må matche filas eget navn (fanger kopier-lim-feil) | konvensjon i maler |
+| 9 | **Feil `metainfo.mal`** – filnavnet i `mal` må matche filas eget navn (fanger kopier-lim-feil). **Av som standard** – aktiveres med `--streng-metainfo`, fordi filer ofte blir omdøpt (f.eks. til `flytkontroll-<id>.json`) før de kjøres. | konvensjon i maler |
+| 10 | **Feil `grunnlagsdataMappe` for batch** – filer kopieres til `grunnlagsdataMappeTil` for en batch (`kopier_fra_arkiv_til_batch`), men batchen kjøres senere med en annen `grunnlagsdataMappe` → batchen finner ikke filene. Tilstanden per batch nullstilles av `rydd_grunnlagsdata_for_batch`. | `kopier_fra_arkiv_til_batch` / batch-kjøring i `panda-orkestrering` |
 
 ---
 

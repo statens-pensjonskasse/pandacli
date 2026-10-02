@@ -1,0 +1,13 @@
+{
+  "navn": "Feil bruk av listevariabel",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {
+    "kull": ["1990", "1991"]
+  },
+  "operasjoner": [
+    {
+      "handling": "pa_fak_ba_09",
+      "filter": "kull-${kull}"
+    }
+  ]
+}

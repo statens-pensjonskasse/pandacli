@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "#{sisteBatchVersjon(...)} finnes ikke i TekstTilFunksjonHjelper og vil kaste UnsupportedOperationException ved kjøring.",
+  "forventede_kategorier": ["ukjente_funksjoner"],
+  "kjent_mangel": false
+}

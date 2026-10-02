@@ -1,10 +1,10 @@
-//! Testrigg som kjører `valider` mot fikstur-samlingen i `resources/`.
+//! Testrigg som kjører `valider` mot fikstur-samlingen i `tests/resources/`.
 //!
-//! - `resources/rutinefiler_gyldige/`: filer som skal validere uten feil.
-//! - `resources/rutinefiler_med_feil/`: filer med kjente problemer. Hver fil har
+//! - `tests/resources/rutinefiler_gyldige/`: filer som skal validere uten feil.
+//! - `tests/resources/rutinefiler_med_feil/`: filer med kjente problemer. Hver fil har
 //!   en sidecar `<navn>.forventet.json` som beskriver forventet resultat.
 //!
-//! Se `resources/README.md` for formatet på sidecar-filene.
+//! Se `tests/resources/README.md` for formatet på sidecar-filene.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,7 +22,9 @@ struct Forventet {
 }
 
 fn resources_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("resources")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("resources")
 }
 
 /// Alle `*.json`-filer i en mappe, utenom sidecar-filene (`*.forventet.json`).

@@ -1,0 +1,18 @@
+{
+  "navn": "Ukjent funksjon",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {
+    "versjon": "#{sisteBatchVersjon(pa_fak_ba_09)}"
+  },
+  "operasjoner": [
+    {
+      "handling": "deploy_batch",
+      "batcher": [
+        {
+          "navn": "pa_fak_ba_09",
+          "versjon": "${versjon}"
+        }
+      ]
+    }
+  ]
+}

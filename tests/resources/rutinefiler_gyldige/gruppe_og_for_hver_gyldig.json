@@ -1,0 +1,26 @@
+{
+  "navn": "Gruppe og forHver over ${skyopplasterId}",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {
+    "skyopplasterId": "00000000-0000-4000-8000-000000000010",
+    "perioder": ["202608", "202609"]
+  },
+  "operasjoner": [
+    {
+      "handling": "gruppe",
+      "gruppeAv": [
+        {
+          "handling": "forHver",
+          "elementer": "${perioder}",
+          "utfør_handlinger": [
+            {
+              "handling": "kopier_filer_fra_batch_til_skyopplaster",
+              "fraBatch": "pa_fak_ba_09",
+              "kjøringsId": "underlag-{{element}}-${skyopplasterId}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

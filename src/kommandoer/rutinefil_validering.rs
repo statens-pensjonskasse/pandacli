@@ -49,7 +49,7 @@ impl ValidationResult {
     }
 
     /// Alle feilkategorier med navn, i rapporteringsrekkefølge. Brukes av
-    /// testriggen (`resources/`) til å slå opp forventede kategorier per fil.
+    /// testriggen (`tests/resources/`) til å slå opp forventede kategorier per fil.
     #[cfg(test)]
     pub(crate) fn kategorier(&self) -> [(&'static str, &Vec<String>); 10] {
         [

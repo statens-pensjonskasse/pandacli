@@ -1,0 +1,82 @@
+{
+    "navn": "Laste opp administrasjonspremier til Snowflak for periode 202601->202608",
+    "gyldigVersjon": "1.1.0",
+    "metainfo": {
+        "tags": [
+            "ad-hoc"
+        ],
+        "støttetAvPaOrkBa01FraVersjon": "1.0.14"
+    },
+    "variabler": {
+        "grunnlagsdataMappe": "grunnlagsdata_2020-01-01_00-00-00-02",
+        "grunnlagsdataMappeTil": "grunnlagsdata_2020-01-01_00-00-00-01",
+        "skyopplasterId": "00000000-0000-4000-8000-000000000001",
+        "paFakBa09Versjon": "5.1.1"
+    },
+    "operasjoner": [
+        {
+            "handling": "deploy_batch",
+            "batcher": [
+                {
+                    "navn": "pa_fak_ba_09",
+                    "versjon": "${paFakBa09Versjon}"
+                }
+            ]
+        },
+        {
+            "navn": "pa_fak_ba_09 (generer_administrasjonspremie_oppdatert_dataunderlag) og skyopplaster",
+            "handling": "gruppe",
+            "gruppeAv": [
+                {
+                    "handling": "rydd_grunnlagsdata_for_batch",
+                    "batch": "pa_fak_ba_09"
+                },
+                {
+                    "handling": "kopier_fra_arkiv_til_batch",
+                    "filnavn": "administrasjonspremie",
+                    "batchFra": "pa_fak_ba_15",
+                    "batchTil": "pa_fak_ba_09",
+                    "grunnlagsdataMappeTil": "${grunnlagsdataMappeTil}",
+                    "nøkkel": "arkivnoekkel/202503"
+                },
+                {
+                    "handling": "kopier_fra_arkiv_til_batch",
+                    "filnavn": "administrasjonspremie",
+                    "batchFra": "pa_fak_ba_15",
+                    "batchTil": "pa_fak_ba_09",
+                    "grunnlagsdataMappeTil": "${grunnlagsdataMappeTil}",
+                    "nøkkel": "arkivnoekkel/202502"
+                },
+                {
+                    "handling": "kopier_fra_arkiv_til_batch",
+                    "filnavn": "administrasjonspremie",
+                    "batchFra": "pa_fak_ba_15",
+                    "batchTil": "pa_fak_ba_09",
+                    "grunnlagsdataMappeTil": "${grunnlagsdataMappeTil}",
+                    "nøkkel": "arkivnoekkel/202501"
+                },
+                {
+                    "handling": "pa_fak_ba_09",
+                    "modus": "generer_administrasjonspremie_oppdatert_dataunderlag",
+                    "kjøringsId": "00000000-0000-4000-8000-000000000002",
+                    "grunnlagsdataMappe": "${grunnlagsdataMappe}"
+                },
+                {
+                    "handling": "kopier_filer_fra_batch_til_skyopplaster",
+                    "fraBatch": "pa_fak_ba_09",
+                    "filPrefix": "administrasjonspremie_oppdatert_dataunderlag",
+                    "kjøringsId": "administrasjonspremie_oppdatert-${skyopplasterId}"
+                },
+                {
+                    "handling": "opprett_bestilling_til_skyopplaster",
+                    "kjøringsId": "administrasjonspremie_oppdatert-${skyopplasterId}",
+                    "filstiHosDVH": "administrasjonspremie_oppdatert"
+                },
+                {
+                    "handling": "rydd_grunnlagsdata_for_batch",
+                    "batch": "pa_fak_ba_09"
+                }
+            ]
+        }
+    ]
+}

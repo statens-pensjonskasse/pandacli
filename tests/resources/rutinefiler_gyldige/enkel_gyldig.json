@@ -1,0 +1,18 @@
+{
+  "navn": "Enkel gyldig fakturering",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {
+    "versjon": "2.4.1"
+  },
+  "operasjoner": [
+    {
+      "handling": "deploy_batch",
+      "batcher": [
+        {
+          "navn": "pa_fak_ba_09",
+          "versjon": "${versjon}"
+        }
+      ]
+    }
+  ]
+}

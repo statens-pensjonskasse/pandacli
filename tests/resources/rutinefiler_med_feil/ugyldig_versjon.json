@@ -1,0 +1,10 @@
+{
+  "navn": "Ugyldig versjonsformat",
+  "gyldigVersjon": "1.0.x",
+  "variabler": {},
+  "operasjoner": [
+    {
+      "handling": "pa_fak_ba_09"
+    }
+  ]
+}

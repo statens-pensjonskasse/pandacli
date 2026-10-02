@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "Listevariabelen 'kull' brukes inni en streng ('kull-${kull}'). Orkestreringa fletter kun listevariabler som står som egen streng (\"${kull}\"), så dette blir ikke erstattet.",
+  "forventede_kategorier": ["listevariabel_feil"],
+  "kjent_mangel": false
+}

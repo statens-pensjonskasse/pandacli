@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "${ukjentVariabel} brukes i 'navn', men finnes ikke i 'variabler'. Blir ikke flettet ut og filen fungerer ikke.",
+  "forventede_kategorier": ["manglende_variabler"],
+  "kjent_mangel": false
+}

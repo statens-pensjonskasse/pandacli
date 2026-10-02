@@ -1,0 +1,73 @@
+{
+  "navn": "To-stegs månedskjøring for versjonsendring, fremskriving og bestandsendring for periode ${periode} med siste fremskrivingsdato ${fremskrivingsDato}",
+  "metainfo": {
+    "mal": "maler/fakturering/manglerVersjon.json",
+    "tags": [
+      "to-steg",
+      "månedskjøring"
+    ],
+    "støttetAvPaOrkBa01FraVersjon": "1.0.11"
+  },
+  "gyldigVersjon": "1.0.11",
+  "variabler": {
+    "fremskrivingsDato": "2026.10.01",
+    "periode": "202609",
+    "forrigePaResBa01Versjon": "1.7.8",
+    "paResBa03Versjon": "1.1.3",
+    "paFakBa02Versjon": "2.0.29",
+    "paFakBa03Versjon": "1.0.34",
+    "paFakBa05Versjon": "2.0.50",
+    "paFakBa09Versjon": "5.1.1",
+    "paFakBa11Versjon": "3.0.15",
+    "paFakBa12Versjon": "1.0.30",
+    "paFakBa13Versjon": "1.0.34",
+    "paFakBa15Versjon": "<X.Y.Z>"
+  },
+  "operasjoner": [
+    {
+      "handling": "deploy_batch",
+      "batcher": [
+        {
+          "navn": "pa_res_ba_01",
+          "versjon": "${forrigePaResBa01Versjon}"
+        },
+        {
+          "navn": "pa_res_ba_03",
+          "versjon": "${paResBa03Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_02",
+          "versjon": "${paFakBa02Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_03",
+          "versjon": "${paFakBa03Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_05",
+          "versjon": "${paFakBa05Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_09",
+          "versjon": "${paFakBa09Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_11",
+          "versjon": "${paFakBa11Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_12",
+          "versjon": "${paFakBa12Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_13",
+          "versjon": "${paFakBa13Versjon}"
+        },
+        {
+          "navn": "pa_fak_ba_15",
+          "versjon": "${paFakBa15Versjon}"
+        }
+      ]
+    }
+  ]
+}

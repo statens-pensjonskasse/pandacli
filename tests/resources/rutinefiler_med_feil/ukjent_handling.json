@@ -1,0 +1,10 @@
+{
+  "navn": "Ukjent handling",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {},
+  "operasjoner": [
+    {
+      "handling": "deployy_batch"
+    }
+  ]
+}

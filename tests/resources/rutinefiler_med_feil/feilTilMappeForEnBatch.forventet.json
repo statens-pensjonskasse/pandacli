@@ -1,0 +1,6 @@
+{
+  "beskrivelse": "Filene kopieres til grunnlagsdataMappeTil (…-01) for pa_fak_ba_09, men batchen kjøres med grunnlagsdataMappe (…-02). Batchen finner ikke filene.",
+  "forventede_kategorier": ["grunnlagsdatamappe_feil"],
+  "kjent_mangel": false,
+  "kommentar": "Semantisk sjekk på tvers av operasjoner. Tilstanden nullstilles ved rydd_grunnlagsdata_for_batch."
+}
