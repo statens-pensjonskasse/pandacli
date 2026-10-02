@@ -25,9 +25,9 @@ fn main() {
             velg_tilfeldig(verdier.clone());
         }
 
-        cli::Kommandoer::RutinefilValider { file_paths } => {
+        cli::Kommandoer::RutinefilValider { file_paths, streng_metainfo } => {
             for path in file_paths {
-                rutinefil_valider(path);
+                rutinefil_valider(path, *streng_metainfo);
             }
         }
 

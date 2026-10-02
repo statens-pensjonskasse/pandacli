@@ -31,9 +31,18 @@ pub enum Kommandoer {
                       Rutinefilene må være i JSON-format og inneholde et 'variabler'-felt.",
         after_help = "EKSEMPLER:\n  \
                       pcli valider fil1.json fil2.json ...\n  \
-                      pcli valider *.json\n"
+                      pcli valider *.json\n  \
+                      pcli valider --streng-metainfo mal.json\n"
     )]
-    RutinefilValider { file_paths: Vec<String> },
+    RutinefilValider {
+        file_paths: Vec<String>,
+        #[clap(
+            long = "streng-metainfo",
+            short = 'm',
+            help = "Slå på streng sjekk av 'metainfo.mal' (at filnavnet matcher malen). Av som standard fordi filer ofte blir omdøpt før kjøring."
+        )]
+        streng_metainfo: bool,
+    },
 
     #[clap(name = "variabler")]
     #[command(
