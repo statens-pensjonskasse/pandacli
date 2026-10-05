@@ -7,11 +7,18 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
+
+# Serialiser release-kjøringer slik at version-bump-commits ikke bygges på
+# utdatert main-tilstand eller kolliderer (required linear history).
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 
 jobs:
-  lag_release_pr:
+  bump_version:
     runs-on: ubuntu-latest
+    # Kun bump direkte på main (også ved manuell workflow_dispatch).
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Get app token
@@ -26,22 +33,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sett opp Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
       - name: Finn versjonsbump fra commits (skip release commits)
         id: bump
         shell: bash
         run: |
           set -euo pipefail
 
-          # Finn siste tag (om finnes)
+          # Siste tag (om finnes) for å avgrense commit-range
           LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
 
-          # Hvis HEAD er en release-commit: ikke lag ny release
+          # Hvis HEAD allerede er en release-commit: ikke bump på nytt (unngå loop)
           HEAD_SUBJECT="$(git log -1 --pretty=format:%s)"
           if echo "$HEAD_SUBJECT" | grep -qE '^chore\(release\):'; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
@@ -49,7 +50,8 @@ jobs:
             exit 0
           fi
 
-          # Hent commits siden siste tag (eller hele historikken hvis ingen tag)
+          # Commits siden siste tag (eller hele historikken hvis ingen tag),
+          # ekskluderer tidligere release-commits
           if [ -n "$LAST_TAG" ]; then
             RANGE="${LAST_TAG}..HEAD"
             SUBJECTS="$(git log $RANGE --pretty=format:%s | grep -vE '^chore\(release\):' || true)"
@@ -59,14 +61,8 @@ jobs:
             LOG="$(git log --pretty=format:'%s%n%b%n----END----')"
           fi
 
-          # Hvis ingen "reelle" commits igjen → ingen release
-          if [ -z "$SUBJECTS" ]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "bump=none" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          BUMP="none"
+          # Standard: hver merge til main gir minst en patch-bump.
+          BUMP="patch"
 
           # Major: feat! / feat(scope)! eller BREAKING CHANGE
           if echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?!:'; then
@@ -76,17 +72,9 @@ jobs:
           # Minor: feat / feat(scope)
           elif echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?:'; then
             BUMP="minor"
-          # Patch: fix/perf (med scope)
-          elif echo "$SUBJECTS" | grep -qE '^(fix|perf)(\(.+\))?:'; then
-            BUMP="patch"
           fi
 
-          if [ "$BUMP" = "none" ]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-          fi
-
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
       - name: Sjekk bump status
@@ -94,16 +82,6 @@ jobs:
         run: |
           echo "skal release='${{ steps.bump.outputs.should_release }}'"
           echo "bump='${{ steps.bump.outputs.bump }}'"
-
-      - name: Lag release branch lokalt
-        if: steps.bump.outputs.should_release == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          # compute version after bump later, but branch name can be temporary first
-          BRANCH="chore/release"
-          git switch -c "$BRANCH"
-          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Bump versjon filer
         if: steps.bump.outputs.should_release == 'true'
@@ -113,91 +91,24 @@ jobs:
           cargo install cargo-edit --locked
           cargo set-version --bump "${{ steps.bump.outputs.bump }}"
 
-      - name: Les version og sett endelig branch name
+      - name: Les ny version
         if: steps.bump.outputs.should_release == 'true'
         id: ver
         shell: bash
         run: |
           set -euo pipefail
-          : "${BRANCH:?BRANCH env var not set (did 'Lag release branch lokalt' run?)}"
-          
           VERSION="$(cargo pkgid | sed 's/.*#//')"
-          RELEASE_BRANCH="chore/release-v$VERSION"
-          
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> "$GITHUB_ENV"
-          
-          git branch -m "$BRANCH" "$RELEASE_BRANCH"
 
-      - name: Forsikrer om at release branch finnes på remote (for signed commit step)
-        if: steps.bump.outputs.should_release == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const branch = process.env.RELEASE_BRANCH;
-
-            core.info(`Repo: ${owner}/${repo}`);
-            core.info(`Actor: ${context.actor}`);
-            
-            if (!branch) throw new Error("RELEASE_BRANCH env var is not set");
-
-            const { data: repoInfo } = await github.rest.repos.get({ owner, repo });
-            const targetBranch = repoInfo.default_branch;
-            core.info(`Default branch is: ${targetBranch}`);
-
-            const baseRef = await github.rest.git.getRef({ owner, repo, ref: `heads/${targetBranch}` });
-            const sha = baseRef.data.object.sha;
-
-            try {
-              await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
-              core.info(`Branch already exists: ${branch}`);
-            } catch (e) {
-              if (e.status !== 404) throw e;
-              core.info(`Creating branch ${branch} at ${sha}`);
-              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha });
-            }
-
-      - name: Debug does remote branch exist?
-        if: steps.bump.outputs.should_release == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "RELEASE_BRANCH=$RELEASE_BRANCH"
-          gh api "repos/${{ github.repository }}/git/ref/heads/$RELEASE_BRANCH" || true
-
-      - name: Lag signed release commit (og push)
+      - name: Lag signed release commit direkte på main (og push)
         if: steps.bump.outputs.should_release == 'true'
         id: signed_commit
         uses: statens-pensjonskasse/gha-create-signed-commit@9952bb63c5cf19fd075e319bd25e5fd03a261b0a # v0.1.2
         with:
           token: ${{ steps.app-token.outputs.token }}
-          branch: ${{ env.RELEASE_BRANCH }}
+          branch: main
           message: "chore(release): v${{ steps.ver.outputs.version }}"
-
           paths: |
             Cargo.toml
             Cargo.lock
           push: true
-
-      - name: Lag eller oppdater PR
-        if: steps.bump.outputs.should_release == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Create PR if it doesn't exist; otherwise update is automatic since branch is pushed
-          if gh pr view "$RELEASE_BRANCH" >/dev/null 2>&1; then
-            echo "PR already exists for $RELEASE_BRANCH"
-          else
-            gh pr create \
-              --head "$RELEASE_BRANCH" \
-              --base "main" \
-              --title "chore(release): v${{ steps.ver.outputs.version }}" \
-              --body "Automated release PR for v${{ steps.ver.outputs.version }}."
-          fi
