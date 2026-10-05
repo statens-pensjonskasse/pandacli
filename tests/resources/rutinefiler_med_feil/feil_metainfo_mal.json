@@ -1,0 +1,13 @@
+{
+  "navn": "Feil metainfo.mal",
+  "gyldigVersjon": "1.0.0",
+  "metainfo": {
+    "mal": "maler/fakturering/et_helt_annet_navn.json"
+  },
+  "variabler": {},
+  "operasjoner": [
+    {
+      "handling": "pa_fak_ba_09"
+    }
+  ]
+}

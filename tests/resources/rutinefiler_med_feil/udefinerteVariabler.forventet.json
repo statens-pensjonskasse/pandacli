@@ -1,0 +1,6 @@
+{
+  "beskrivelse": "${databaseSisteFremskrivingsdato} brukes i 'navn' og i operasjonene, men er ikke definert i 'variabler'. Blir ikke flettet ut.",
+  "forventede_kategorier": ["manglende_variabler"],
+  "kjent_mangel": false,
+  "kommentar": "Sjekkes med pcli."
+}

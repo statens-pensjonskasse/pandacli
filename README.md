@@ -39,6 +39,21 @@ pcli --help
 ## Konfigurasjon
 Eventuelle miljøvariabler eller konfigurasjonsfiler som må settes opp.
 
+## Validering av rutinefiler
+`pcli valider <fil.json>` gjør avansert validering av rutinefiler mot en
+versjonert katalog over hva `panda-orkestrering` støtter (kjente handlinger,
+`#{...}`-funksjoner, struktur, versjonsformat m.m.). Se
+[`docs/rutinefil_katalog.md`](docs/rutinefil_katalog.md) for hva som valideres
+og hvordan katalogen oppdateres når det kommer nye instruksjoner.
+
+Sjekken av `metainfo.mal` (at filnavnet matcher malen) er **av som standard**,
+fordi filer ofte blir omdøpt før de kjøres. Slå den på med `--streng-metainfo`:
+
+```sh
+pcli valider --streng-metainfo mal.json
+```
+
+
 
 ## Lisens
 [MIT](LICENSE).

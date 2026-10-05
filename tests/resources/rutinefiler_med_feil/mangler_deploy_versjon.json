@@ -1,0 +1,15 @@
+{
+  "navn": "deploy_batch uten versjon",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {},
+  "operasjoner": [
+    {
+      "handling": "deploy_batch",
+      "batcher": [
+        {
+          "navn": "pa_fak_ba_09"
+        }
+      ]
+    }
+  ]
+}

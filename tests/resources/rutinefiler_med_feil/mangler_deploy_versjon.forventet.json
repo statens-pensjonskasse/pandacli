@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "Batchen i 'batcher' mangler 'versjon', som DeployBatchInstruksjonOversetter krever.",
+  "forventede_kategorier": ["strukturfeil"],
+  "kjent_mangel": false
+}

@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "gyldigVersjon '1.0.x' matcher ikke Versjon-regexen (\\d+(\\.\\d+)*(-SNAPSHOT)?) og vil kaste IllegalArgumentException.",
+  "forventede_kategorier": ["versjonsfeil"],
+  "kjent_mangel": false
+}

@@ -1,0 +1,10 @@
+{
+  "navn": "Kjører med ${ukjentVariabel}",
+  "gyldigVersjon": "1.0.0",
+  "variabler": {},
+  "operasjoner": [
+    {
+      "handling": "pa_fak_ba_09"
+    }
+  ]
+}

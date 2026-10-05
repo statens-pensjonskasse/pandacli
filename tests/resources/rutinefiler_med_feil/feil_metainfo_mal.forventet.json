@@ -1,0 +1,5 @@
+{
+  "beskrivelse": "metainfo.mal peker på 'et_helt_annet_navn.json', men fila heter 'feil_metainfo_mal.json' – typisk kopier-lim-feil.",
+  "forventede_kategorier": ["metainfo_feil"],
+  "kjent_mangel": false
+}
