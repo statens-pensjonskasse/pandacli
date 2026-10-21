@@ -38,6 +38,7 @@ pub const KJENTE_HANDLINGER: &[&str] = &[
     "kopier_fil_fra_arkiv_fakturering_til_batch",
     "kopier_filer_fra_aktuar_til_batch",
     "kopier_filer_fra_aktuar_til_skyopplaster",
+    "kopier_premiesatsfil_fra_arkiv_til_batch",
     "kopier_filer_fra_arkiv_til_skyopplaster",
     "kopier_filer_fra_batch_til_batch",
     "kopier_filer_fra_batch_til_skyopplaster",
