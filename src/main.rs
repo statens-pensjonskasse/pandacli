@@ -121,11 +121,11 @@ fn main() -> ExitCode {
 
             if *status {
                 let status_str = if result.is_ok() { "OK" } else { "FEILET" };
-                eprintln!("{}", status_str);
+                println!("{}", status_str);
             } else {
                 match &result {
-                    Ok(value) => eprintln!("{}", value),
-                    Err(e) => eprintln!("Error: {}", e),
+                    Ok(value) => println!("{}", value),
+                    Err(e) => eprintln!("Feil: {}", e),
                 }
             }
             result.is_ok()
@@ -133,8 +133,8 @@ fn main() -> ExitCode {
 
         cli::Kommandoer::Header { file_path } => match header(file_path) {
             Ok(headere) => {
-                eprintln!("Fant {} headere:", headere.len());
-                eprintln!("{}", headere.join("\n"));
+                println!("Fant {} headere:", headere.len());
+                println!("{}", headere.join("\n"));
                 true
             }
             Err(e) => {
@@ -147,7 +147,7 @@ fn main() -> ExitCode {
             let result = panda_murmur(id);
             let unwrapped = result.unwrap();
 
-            eprintln!(
+            println!(
                 "Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
                 unwrapped,
                 unwrapped,

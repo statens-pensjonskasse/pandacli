@@ -39,7 +39,6 @@ pub fn operasjoner(filsti: &str) -> Result<String, String> {
     }
 
     if resterende == 0 {
-        println!("Ingen handlinger funnet i filen.");
         return Ok(("Ingen handlinger funnet i filen").to_string());
     }
 
