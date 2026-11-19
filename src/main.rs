@@ -7,15 +7,15 @@ use clap::Parser;
 use cli::Cli;
 use std::process::ExitCode;
 
+use crate::kommandoer::panda_murmur::panda_murmur;
 use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::diff_filer::diff_filer;
 use kommandoer::header::header;
+use kommandoer::operasjoner::operasjoner;
 use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
 use kommandoer::velg_tilfeldig::velg_tilfeldig;
-use kommandoer::operasjoner::operasjoner;
 use uuid::Uuid;
-use crate::kommandoer::panda_murmur::panda_murmur;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -23,10 +23,12 @@ fn main() -> ExitCode {
     // Hver kommando gir `true` ved suksess. Feil gir exit-kode 1 slik at
     // pcli kan brukes i skript og CI (f.eks. `pcli valider *.json || exit 1`).
     let suksess = match &cli.kommando {
+        cli::Kommandoer::VelgTilfeldig { verdier } => velg_tilfeldig(verdier.clone()),
 
-        cli::Kommandoer::VelgTilfeldig {verdier} => velg_tilfeldig(verdier.clone()),
-
-        cli::Kommandoer::RutinefilValider { file_paths, streng_metainfo } => {
+        cli::Kommandoer::RutinefilValider {
+            file_paths,
+            streng_metainfo,
+        } => {
             // Validerer alle filene (ingen kortslutning), feiler hvis minst én feilet.
             let mut alle_gyldige = true;
             for path in file_paths {
@@ -42,25 +44,41 @@ fn main() -> ExitCode {
             file_paths,
         } => match summer_verdier(*kolonne_nr, file_paths) {
             Ok(summering) => {
-                let antall_filer = summering.antall_filer;
-                let sum = summering.sum;
-                let headere = &summering.headere;
+                for f in &summering.feil {
+                    eprintln!("❌ {}", f);
+                }
 
-                if headere.len() > 1 {
+                if summering.antall_summert == 0 {
+                    eprintln!("Ingen filer kunne summeres.");
+                    return ExitCode::FAILURE;
+                }
+
+                let sum = utils::formater_tall(summering.sum);
+                // Sortert for forutsigbar utskrift (HashMap er uordnet).
+                let mut headere: Vec<_> = summering.headere.iter().collect();
+                headere.sort_by(|a, b| a.0.cmp(b.0));
+                let vis_header = |h: &str| {
+                    if h.is_empty() {
+                        "(ingen header)".to_string()
+                    } else {
+                        format!("'{}'", h)
+                    }
+                };
+
+                if let [(header, _)] = headere.as_slice() {
                     println!(
-                        "Summerer beløp fra {} filer, sum: {}",
-                        antall_filer,
-                        utils::formater_tall(sum)
+                        "Summerte {} filer med header {}, sum: {}",
+                        summering.antall_summert,
+                        vis_header(header),
+                        sum
                     );
+                } else {
+                    println!("Summerte {} filer, sum: {}", summering.antall_summert, sum);
                     println!(
-                        "Fant {} forskjellige headere for kolonne {}. Summert kolonner fra {} filer, sum: {}",
+                        "Fant {} forskjellige headere for kolonne {}:",
                         headere.len(),
-                        kolonne_nr + 1,
-                        antall_filer,
-                        utils::formater_tall(sum)
+                        kolonne_nr
                     );
-
-                    println!("Headere og deres respektive filer:");
                     for (header, filer) in headere {
                         let file_list = if filer.len() > 5 {
                             let første_fem: Vec<&str> =
@@ -69,22 +87,15 @@ fn main() -> ExitCode {
                         } else {
                             filer.join(", ")
                         };
-                        println!("  - '{}': {}", header, file_list);
+                        println!("  - {}: {}", vis_header(header), file_list);
                     }
-                } else {
-                    println!(
-                        "Summerer fra {} filer med header '{}', sum: {}",
-                        antall_filer,
-                        headere.keys().next().unwrap_or(&"Ingen header".to_string()),
-                        utils::formater_tall(sum)
-                    );
                 }
 
                 if !summering.feil.is_empty() {
                     eprintln!(
                         "❌ {} av {} filer kunne ikke summeres og er ikke med i summen.",
                         summering.feil.len(),
-                        antall_filer
+                        summering.antall_totalt()
                     );
                 }
                 summering.feil.is_empty()
@@ -120,30 +131,28 @@ fn main() -> ExitCode {
             result.is_ok()
         }
 
-        cli::Kommandoer::Header { file_path } => {
-            match header(file_path) {
-                Ok(headere) => {
-                    eprintln!("Fant {} headere:", headere.len());
-                    eprintln!("{}", headere.join("\n"));
-                    true
-                }
-                Err(e) => {
-                    eprintln!("Feil: {}", e);
-                    false
-                }
+        cli::Kommandoer::Header { file_path } => match header(file_path) {
+            Ok(headere) => {
+                eprintln!("Fant {} headere:", headere.len());
+                eprintln!("{}", headere.join("\n"));
+                true
+            }
+            Err(e) => {
+                eprintln!("Feil: {}", e);
+                false
             }
         },
 
-        cli::Kommandoer::Filpartisjon {
-            id
-        } => {
+        cli::Kommandoer::Filpartisjon { id } => {
             let result = panda_murmur(id);
             let unwrapped = result.unwrap();
 
-            eprintln!("Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
-                      unwrapped,
-                      unwrapped,
-                      Uuid::new_v4());
+            eprintln!(
+                "Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
+                unwrapped,
+                unwrapped,
+                Uuid::new_v4()
+            );
             true
         }
     };

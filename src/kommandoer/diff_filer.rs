@@ -1,7 +1,8 @@
-
-
-
-pub fn diff_filer(venstre: Vec<String>, høyre: Vec<String>, _ignorert: Vec<usize>) -> Result<(), String> {
+pub fn diff_filer(
+    venstre: Vec<String>,
+    høyre: Vec<String>,
+    _ignorert: Vec<usize>,
+) -> Result<(), String> {
     if venstre.len() != høyre.len() {
         return Err("Antall filer i venstre og høyre side må være likt.".to_string());
     }

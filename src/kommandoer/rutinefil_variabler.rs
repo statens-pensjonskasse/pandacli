@@ -23,21 +23,21 @@ pub fn rutinefil_variabler(filsti: &str) -> bool {
     };
 
     let mut definerte_variabler = Vec::new();
-    
+
     if let Some(variabler) = json.get(VARIABLER_KEY).and_then(Value::as_object) {
         for (key, value) in variabler {
             definerte_variabler.push(format!("{} = {}", key, value));
         }
     }
 
-    match definerte_variabler.as_slice() {  
+    match definerte_variabler.as_slice() {
         [] => {
             println!("Ingen variabler er definert i rutinefilen '{}'.", filsti);
-        },
+        }
         variabler => {
             println!("Følgende variabler er definert i '{}'.", filsti);
             for v in variabler {
-            println!("   - {}", v);
+                println!("   - {}", v);
             }
         }
     }

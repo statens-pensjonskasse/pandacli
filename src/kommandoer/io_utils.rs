@@ -17,12 +17,9 @@ pub fn les_filinnhold(filsti: &str) -> Result<String, String> {
 }
 
 pub fn parse_json(filinnhold: &str) -> Result<serde_json::Value, String> {
-    match serde_json::from_str(&filinnhold) {
+    match serde_json::from_str(filinnhold) {
         Ok(json) => Ok(json),
-        Err(e) => Err(format!(
-            "Klarte ikke parse JSON fra filen: {}",
-            e
-        ))
+        Err(e) => Err(format!("Klarte ikke parse JSON fra filen: {}", e)),
     }
 }
 
@@ -95,7 +92,6 @@ mod tests {
         let result = parse_json(json);
         assert!(result.is_ok());
     }
-
 
     #[test]
     fn test_parse_json_feil_format() {

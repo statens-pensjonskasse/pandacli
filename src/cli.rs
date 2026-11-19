@@ -6,7 +6,12 @@ use clap::{Parser, Subcommand};
     version = env!("CARGO_PKG_VERSION"),
     about = "Kommandolinje-verktøy for bruk av premieleveranse. Skriv 'pcli <kommando> --help' for mer informasjon om en spesifikk kommando.",
     long_about = "Dette verktøyet gir enkle kommandoer for å validere rutinefiler, \
-                      hente ut variabler fra rutinefiler og summere verdier i CSV-filer."
+                      hente ut variabler fra rutinefiler, summere verdier i CSV-filer, \
+                      følge med på kjøringer og finne filpartisjon for et medlem.",
+    after_help = "EXIT-KODER:\n  \
+                  0  Kommandoen lyktes\n  \
+                  1  Kommandoen feilet (f.eks. valideringsfeil, fil som ikke kunne leses eller summeres)\n  \
+                  2  Ugyldige argumenter"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -26,13 +31,18 @@ pub enum Kommandoer {
 
     #[clap(name = "valider")]
     #[command(
-        about = "Validerer rutinefil ved å sjekke for definerte og brukte variabler. Kan validere en eller flere rutinefiler.",
-        long_about = "Denne kommandoen validerer en eller flere rutinefiler ved å sjekke at alle variabler som er definert i filen også er brukt. \
+        about = "Validerer en eller flere rutinefiler mot det panda-orkestrering støtter.",
+        long_about = "Validerer en eller flere rutinefiler mot en katalog over hva panda-orkestrering støtter: \
+                      variabler (manglende, uutfylte og ubrukte), kjente handlinger og #{...}-funksjoner, struktur, \
+                      listevariabler, versjonsformat og grunnlagsdataMappe for batcher. \
                       Rutinefilene må være i JSON-format og inneholde et 'variabler'-felt.",
         after_help = "EKSEMPLER:\n  \
                       pcli valider fil1.json fil2.json ...\n  \
                       pcli valider *.json\n  \
-                      pcli valider --streng-metainfo mal.json\n"
+                      pcli valider --streng-metainfo mal.json\n\n\
+                      EXIT-KODE:\n  \
+                      1 hvis minst én fil har feil (❌) eller ikke kan leses. Advarsler om uutfylte (❓)\n  \
+                      eller ubrukte (⚠️) variabler gir ikke feil, siden maler har uutfylte plassholdere.\n"
     )]
     RutinefilValider {
         file_paths: Vec<String>,
@@ -47,7 +57,7 @@ pub enum Kommandoer {
     #[clap(name = "variabler")]
     #[command(
         about = "Finner og lister ut variabler i rutinefilen",
-        long_about = "Henter ut alle variabler som er definert i en rutinefil.  Rutinefilen må være i JSON-format og inneholde et 'variabler'-felt.",
+        long_about = "Henter ut alle variabler som er definert i en rutinefil. Rutinefilen må være i JSON-format og inneholde et 'variabler'-felt.",
         after_help = "EKSEMPLER:\n  \
                       pcli variabler fil.json"
     )]
@@ -57,8 +67,9 @@ pub enum Kommandoer {
     #[command(
         about = "Summerer beløp i en gitt kolonne for alle rader i csv-fil(ene), støtter også gz komprimerte filer.",
         long_about = "Summerer verdier i en spesifisert kolonne (0-indeksert) for en eller flere CSV-filer, tomme felt blir håndtert som om de var 0. \
-                      Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz).\
-                      Kommandoen varsler fra om det er forskjellige headere mellom filer.\
+                      Filene kan være vanlige CSV-filer (.csv) eller GZip-komprimerte CSV-filer (.csv.gz). \
+                      Kommandoen varsler fra om det er forskjellige headere mellom filer. \
+                      Filer som ikke kan summeres rapporteres med linjenummer, er ikke med i summen, og gir exit-kode 1. \
                       NB! Er du usikker på hvilken kolonne du skal bruke, kan du bruke kommandoen 'pcli header <filnavn>' for å liste opp headere med indekser.",
         after_help = "EKSEMPLER:\n  \
                       pcli summer 0 fil1.csv fil2.csv.gz\n  \
@@ -99,8 +110,13 @@ pub enum Kommandoer {
                   pcli operasjoner operasjoner.log --status\n  \
                   pcli operasjoner operasjoner.log -s"
     )]
-    Operasjoner {file_path: String,
-        #[clap(short, long, help = "Vis kun status for kjøringen. OK hvis kjøringen er ferdig eller kjører, FEILET hvis det oppstod en feil.")]
+    Operasjoner {
+        file_path: String,
+        #[clap(
+            short,
+            long,
+            help = "Vis kun status for kjøringen. OK hvis kjøringen er ferdig eller kjører, FEILET hvis det oppstod en feil."
+        )]
         status: bool,
     },
 
@@ -111,7 +127,7 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli header fil.csv"
     )]
-    Header {file_path: String },
+    Header { file_path: String },
     #[clap(name = "filpartisjon")]
     #[command(
         about = "Printer ut hvilken partisjon et fødselsnummer eller en ID tilhører.",
@@ -120,5 +136,5 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli filpartisjon D9F47A69-E85E-42A0-9686-151835F38ACB"
     )]
-    Filpartisjon {id: String },
+    Filpartisjon { id: String },
 }

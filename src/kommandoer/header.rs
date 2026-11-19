@@ -1,15 +1,14 @@
+use flate2::read::GzDecoder;
 use std::error::Error;
 use std::fs::File;
-use flate2::read::GzDecoder;
 use std::io::Read;
 
 pub fn header(filsti: &String) -> Result<Vec<String>, String> {
-
     let innhold = les_innhold_fil(filsti).map_err(|e| e.to_string())?;
     let rader: Vec<&str> = innhold.lines().collect();
 
     if rader.is_empty() {
-        return Ok(vec![format!("Ingen rader i filen")]);
+        return Ok(vec!["Ingen rader i filen".to_string()]);
     }
 
     let headere: Vec<&str> = rader[0].split(";").collect();
@@ -49,15 +48,14 @@ fn les_innhold_fil(filsti: &String) -> Result<String, Box<dyn Error>> {
     Ok(innhold)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use flate2::Compression;
+    use flate2::write::GzEncoder;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
-    use flate2::write::GzEncoder;
-    use flate2::Compression;
 
     fn lag_test_fil(filsti: &str, innhold: &str) -> String {
         let mut file = File::create(filsti).unwrap();
@@ -71,16 +69,20 @@ mod tests {
         let mappesti = mappe.path().join("test_med_header.csv");
         let sti = mappesti.to_string_lossy().to_string();
 
-        let innhold = "personId;avtale;bokføringsperiode\n12314123;928219;2020501\n519929213;123141;202501";
+        let innhold =
+            "personId;avtale;bokføringsperiode\n12314123;928219;2020501\n519929213;123141;202501";
         lag_test_fil(&sti, innhold);
 
         let resultat = header(&sti).unwrap();
 
-        assert_eq!(resultat, vec![
-            "0: personId".to_string(),
-            "1: avtale".to_string(),
-            "2: bokføringsperiode".to_string()
-        ]);
+        assert_eq!(
+            resultat,
+            vec![
+                "0: personId".to_string(),
+                "1: avtale".to_string(),
+                "2: bokføringsperiode".to_string()
+            ]
+        );
     }
 
     #[test]
@@ -94,11 +96,14 @@ mod tests {
 
         let resultat = header(&sti).unwrap();
 
-        assert_eq!(resultat, vec![
-            "0: 12314123".to_string(),
-            "1: 928219".to_string(),
-            "2: 2020501".to_string()
-        ]);
+        assert_eq!(
+            resultat,
+            vec![
+                "0: 12314123".to_string(),
+                "1: 928219".to_string(),
+                "2: 2020501".to_string()
+            ]
+        );
     }
 
     #[test]
@@ -131,10 +136,13 @@ mod tests {
 
         let resultat = header(&sti).unwrap();
 
-        assert_eq!(resultat, vec![
-            "0: personId".to_string(),
-            "1: avtale".to_string(),
-            "2: periode".to_string()
-        ]);
+        assert_eq!(
+            resultat,
+            vec![
+                "0: personId".to_string(),
+                "1: avtale".to_string(),
+                "2: periode".to_string()
+            ]
+        );
     }
 }
