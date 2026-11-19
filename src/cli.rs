@@ -27,7 +27,10 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli rnd a b c d e f ..."
     )]
-    VelgTilfeldig { verdier: Vec<String> },
+    VelgTilfeldig {
+        #[arg(required = true)]
+        verdier: Vec<String>,
+    },
 
     #[clap(name = "valider")]
     #[command(
@@ -45,6 +48,7 @@ pub enum Kommandoer {
                       eller ubrukte (⚠️) variabler gir ikke feil, siden maler har uutfylte plassholdere.\n"
     )]
     RutinefilValider {
+        #[arg(required = true)]
         file_paths: Vec<String>,
         #[clap(
             long = "streng-metainfo",
@@ -78,6 +82,7 @@ pub enum Kommandoer {
     )]
     CsvSummering {
         kolonne_nr: usize,
+        #[arg(required = true)]
         file_paths: Vec<String>,
     },
 
