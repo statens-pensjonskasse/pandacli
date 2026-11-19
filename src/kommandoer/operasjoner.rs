@@ -21,11 +21,12 @@ pub fn operasjoner(filsti: &str) -> Result<String, String> {
             handling = Some(rest.trim().to_string());
         }
 
-        if let Some(num) = linje.strip_prefix("Handling: ") {
-            if let Ok(val) = num.trim().parse::<u32>() {
-                maks = maks.or(Some(val));
-                resterende += 1;
-            }
+        if let Some(val) = linje
+            .strip_prefix("Handling: ")
+            .and_then(|num| num.trim().parse::<u32>().ok())
+        {
+            maks = maks.or(Some(val));
+            resterende += 1;
         }
 
         if let Some(_error) = linje.strip_prefix("Operasjon feilet med: ") {

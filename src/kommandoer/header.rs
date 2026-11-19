@@ -8,7 +8,7 @@ pub fn header(filsti: &String) -> Result<Vec<String>, String> {
     let rader: Vec<&str> = innhold.lines().collect();
 
     if rader.is_empty() {
-        return Ok(vec![format!("Ingen rader i filen")]);
+        return Ok(vec!["Ingen rader i filen".to_string()]);
     }
 
     let headere: Vec<&str> = rader[0].split(";").collect();

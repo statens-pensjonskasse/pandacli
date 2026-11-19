@@ -223,10 +223,12 @@ fn log_minnebruk(kontekst: &str) {
         if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
             for linje in status.lines() {
                 if linje.starts_with("VmRSS:") {
-                    if let Some(kb_str) = linje.split_whitespace().nth(1) {
-                        if let Ok(kb) = kb_str.parse::<u64>() {
-                            eprintln!("[mem] RSS: {} MB | {}", kb / 1024, kontekst);
-                        }
+                    if let Some(kb) = linje
+                        .split_whitespace()
+                        .nth(1)
+                        .and_then(|kb_str| kb_str.parse::<u64>().ok())
+                    {
+                        eprintln!("[mem] RSS: {} MB | {}", kb / 1024, kontekst);
                     }
                     break;
                 }

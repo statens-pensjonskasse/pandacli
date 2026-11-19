@@ -619,17 +619,19 @@ fn spor_grunnlagsdatamappe(
     }
 
     // En batch-kjøring: handling == batch-navn og har egen grunnlagsdataMappe.
-    if let Some(mappe) = objekt.get("grunnlagsdataMappe").and_then(Value::as_str) {
-        if let Some(kopiert) = kopiert_til.get(handling) {
-            if let Some(kjort) = resolver_mappeverdi(mappe, variabler) {
-                if &kjort != kopiert {
-                    resultat.grunnlagsdatamappe_feil.push(format!(
-                        "Batch '{}' kjøres med grunnlagsdataMappe '{}', men filene ble kopiert til '{}' (grunnlagsdataMappeTil). Batchen finner ikke filene.",
-                        handling, kjort, kopiert
-                    ));
-                }
-            }
-        }
+    let kjort = objekt
+        .get("grunnlagsdataMappe")
+        .and_then(Value::as_str)
+        .and_then(|mappe| resolver_mappeverdi(mappe, variabler));
+    let avvik = kopiert_til
+        .get(handling)
+        .zip(kjort)
+        .filter(|(kopiert, kjort)| kjort != *kopiert);
+    if let Some((kopiert, kjort)) = avvik {
+        resultat.grunnlagsdatamappe_feil.push(format!(
+            "Batch '{}' kjøres med grunnlagsdataMappe '{}', men filene ble kopiert til '{}' (grunnlagsdataMappeTil). Batchen finner ikke filene.",
+            handling, kjort, kopiert
+        ));
     }
 }
 
