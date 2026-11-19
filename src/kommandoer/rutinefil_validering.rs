@@ -48,6 +48,20 @@ impl ValidationResult {
             && self.grunnlagsdatamappe_feil.is_empty()
     }
 
+    /// Feil som gjør at rutinefila ikke vil fungere (❌ i rapporten). Uutfylte
+    /// (❓) og ubrukte (⚠️) variabler er advarsler og gir ikke feilende exit-kode,
+    /// siden maler naturlig har uutfylte plassholdere.
+    fn har_kritiske_feil(&self) -> bool {
+        !(self.manglende_variabler.is_empty()
+            && self.ukjente_handlinger.is_empty()
+            && self.ukjente_funksjoner.is_empty()
+            && self.strukturfeil.is_empty()
+            && self.metainfo_feil.is_empty()
+            && self.versjonsfeil.is_empty()
+            && self.listevariabel_feil.is_empty()
+            && self.grunnlagsdatamappe_feil.is_empty())
+    }
+
     /// Alle feilkategorier med navn, i rapporteringsrekkefølge. Brukes av
     /// testriggen (`tests/resources/`) til å slå opp forventede kategorier per fil.
     #[cfg(test)]
@@ -82,7 +96,10 @@ impl ValidationResult {
     }
 }
 
-pub fn rutinefil_valider(filsti: &str, streng_metainfo: bool) {
+/// Validerer og rapporterer én rutinefil. Returnerer `true` hvis fila kan
+/// kjøres (ingen kritiske feil), `false` ved kritiske feil eller hvis fila ikke
+/// kunne leses/parses.
+pub fn rutinefil_valider(filsti: &str, streng_metainfo: bool) -> bool {
     println!(
         "Validering filen '{}' (katalog synket mot orkestrering v{}).",
         filsti,
@@ -94,11 +111,11 @@ pub fn rutinefil_valider(filsti: &str, streng_metainfo: bool) {
         Err(e) => {
             eprintln!("Feil ved lesing av fil: {}", e);
             println!();
-            return;
+            return false;
         }
     };
 
-    match validering_innhold_rutinefil(&filinnhold, filsti, streng_metainfo) {
+    let gyldig = match validering_innhold_rutinefil(&filinnhold, filsti, streng_metainfo) {
         Ok(resultat) => {
             if resultat.ingen_feil() {
                 println!("✅ Validering fullført, ingen feil funnet.");
@@ -144,12 +161,15 @@ pub fn rutinefil_valider(filsti: &str, streng_metainfo: bool) {
                     &resultat.ubrukte_variabler,
                 );
             }
+            !resultat.har_kritiske_feil()
         }
         Err(e) => {
             eprintln!("❌ Validering feilet: {}", e);
+            false
         }
-    }
+    };
     println!();
+    gyldig
 }
 
 pub fn validering_innhold_rutinefil(
@@ -888,6 +908,60 @@ mod tests {
             "forventet ingen feil, fikk: {:?}",
             r.grunnlagsdatamappe_feil
         );
+    }
+
+    #[test]
+    fn advarsler_er_ikke_kritiske_feil() {
+        // Uutfylt plassholder (❓) og ubrukt variabel (⚠️) skal ikke gi
+        // feilende exit-kode.
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": { "versjon": "<x.x.x>", "ubrukt": "1" },
+            "operasjoner": [ { "handling": "pa_res_ba_02", "v": "${versjon}" } ]
+        }"#;
+        let r = valider(innhold);
+        assert!(!r.udefinerte_variabler.is_empty());
+        assert!(!r.ubrukte_variabler.is_empty());
+        assert!(!r.har_kritiske_feil());
+    }
+
+    #[test]
+    fn ukjent_handling_er_kritisk_feil() {
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": {},
+            "operasjoner": [ { "handling": "deploy" } ]
+        }"#;
+        assert!(valider(innhold).har_kritiske_feil());
+    }
+
+    fn ressurs(relativ: &str) -> String {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/resources")
+            .join(relativ)
+            .to_string_lossy()
+            .to_string()
+    }
+
+    #[test]
+    fn rutinefil_valider_returnerer_true_for_gyldig_fil() {
+        assert!(rutinefil_valider(
+            &ressurs("rutinefiler_gyldige/enkel_gyldig.json"),
+            true
+        ));
+    }
+
+    #[test]
+    fn rutinefil_valider_returnerer_false_for_fil_med_feil() {
+        assert!(!rutinefil_valider(
+            &ressurs("rutinefiler_med_feil/ukjent_handling.json"),
+            true
+        ));
+    }
+
+    #[test]
+    fn rutinefil_valider_returnerer_false_for_manglende_fil() {
+        assert!(!rutinefil_valider(&ressurs("finnes_ikke.json"), true));
     }
 
     #[test]
