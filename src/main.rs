@@ -42,25 +42,44 @@ fn main() -> ExitCode {
             file_paths,
         } => match summer_verdier(*kolonne_nr, file_paths) {
             Ok(summering) => {
-                let antall_filer = summering.antall_filer;
-                let sum = summering.sum;
-                let headere = &summering.headere;
+                for f in &summering.feil {
+                    eprintln!("❌ {}", f);
+                }
 
-                if headere.len() > 1 {
+                if summering.antall_summert == 0 {
+                    eprintln!("Ingen filer kunne summeres.");
+                    return ExitCode::FAILURE;
+                }
+
+                let sum = utils::formater_tall(summering.sum);
+                // Sortert for forutsigbar utskrift (HashMap er uordnet).
+                let mut headere: Vec<_> = summering.headere.iter().collect();
+                headere.sort_by(|a, b| a.0.cmp(b.0));
+                let vis_header = |h: &str| {
+                    if h.is_empty() {
+                        "(ingen header)".to_string()
+                    } else {
+                        format!("'{}'", h)
+                    }
+                };
+
+                if let [(header, _)] = headere.as_slice() {
                     println!(
-                        "Summerer beløp fra {} filer, sum: {}",
-                        antall_filer,
-                        utils::formater_tall(sum)
+                        "Summerte {} filer med header {}, sum: {}",
+                        summering.antall_summert,
+                        vis_header(header),
+                        sum
+                    );
+                } else {
+                    println!(
+                        "Summerte {} filer, sum: {}",
+                        summering.antall_summert, sum
                     );
                     println!(
-                        "Fant {} forskjellige headere for kolonne {}. Summert kolonner fra {} filer, sum: {}",
+                        "Fant {} forskjellige headere for kolonne {}:",
                         headere.len(),
-                        kolonne_nr + 1,
-                        antall_filer,
-                        utils::formater_tall(sum)
+                        kolonne_nr
                     );
-
-                    println!("Headere og deres respektive filer:");
                     for (header, filer) in headere {
                         let file_list = if filer.len() > 5 {
                             let første_fem: Vec<&str> =
@@ -69,22 +88,15 @@ fn main() -> ExitCode {
                         } else {
                             filer.join(", ")
                         };
-                        println!("  - '{}': {}", header, file_list);
+                        println!("  - {}: {}", vis_header(header), file_list);
                     }
-                } else {
-                    println!(
-                        "Summerer fra {} filer med header '{}', sum: {}",
-                        antall_filer,
-                        headere.keys().next().unwrap_or(&"Ingen header".to_string()),
-                        utils::formater_tall(sum)
-                    );
                 }
 
                 if !summering.feil.is_empty() {
                     eprintln!(
                         "❌ {} av {} filer kunne ikke summeres og er ikke med i summen.",
                         summering.feil.len(),
-                        antall_filer
+                        summering.antall_totalt()
                     );
                 }
                 summering.feil.is_empty()

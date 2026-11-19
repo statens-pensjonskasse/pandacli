@@ -7,12 +7,21 @@ use std::io::{BufRead, BufReader};
 use indicatif::{ProgressBar, ProgressStyle};
 
 pub struct Summering {
-    pub antall_filer: usize,
+    /// Antall filer som ble summert uten feil (er med i `sum`).
+    pub antall_summert: usize,
     pub sum: f64,
-    /// Header for kolonnen -> filene som har den headeren.
+    /// Header for kolonnen -> filene som har den headeren. Filer uten header
+    /// ligger under tom streng.
     pub headere: HashMap<String, Vec<String>>,
     /// Feilmeldinger for filer som ikke kunne summeres (er ikke med i `sum`).
     pub feil: Vec<String>,
+}
+
+impl Summering {
+    /// Antall filer totalt, inkludert de som feilet.
+    pub fn antall_totalt(&self) -> usize {
+        self.antall_summert + self.feil.len()
+    }
 }
 
 pub fn summer_verdier(kolonne_nr: usize, filstier: &[String]) -> Result<Summering, String> {
@@ -45,8 +54,8 @@ pub fn summer_verdier(kolonne_nr: usize, filstier: &[String]) -> Result<Summerin
         filstier
             .par_iter()
             .map(|filsti| {
-                let res = finn_sum_for_fil(kolonne_nr, filsti)
-                    .map_err(|e| format!("{}: {}", filsti, e));
+                // Feilmeldingene fra finn_sum_for_fil inneholder allerede filstien.
+                let res = finn_sum_for_fil(kolonne_nr, filsti).map_err(|e| e.to_string());
                 pb_clone.inc(1);
                 log_minnebruk(filsti);
                 res
@@ -57,27 +66,25 @@ pub fn summer_verdier(kolonne_nr: usize, filstier: &[String]) -> Result<Summerin
 
     let mut headere: HashMap<String, Vec<String>> = HashMap::with_capacity(8);
     let mut totalsum = 0.0f64;
+    let mut antall_summert = 0;
     let mut feil: Vec<String> = Vec::new();
 
     for result in results {
         match result {
             Ok((name, file, sum)) => {
                 totalsum += sum;
+                antall_summert += 1;
                 headere.entry(name).or_default().push(file);
             }
             Err(e) => feil.push(e),
         }
     }
 
-    for f in &feil {
-        eprintln!("Advarsel: {}", f);
-    }
-
-    pb.finish_with_message("All files processed");
+    pb.finish_and_clear();
     log_minnebruk("ferdig summering");
 
     Ok(Summering {
-        antall_filer,
+        antall_summert,
         sum: totalsum,
         headere,
         feil,
@@ -96,7 +103,7 @@ fn finn_sum_for_fil(
     // Leser kun første linje for å detektere header — ingen full fil-allokering.
     let første_linje = match linjer.next() {
         Some(Ok(l)) => l,
-        Some(Err(e)) => return Err(Box::from(format!("Lese-feil i '{}': {}", filsti, e))),
+        Some(Err(e)) => return Err(Box::from(format!("Lese-feil i '{}' linje 1: {}", filsti, e))),
         None => return Ok((String::new(), filnavn, 0.0)),
     };
 
@@ -121,15 +128,17 @@ fn finn_sum_for_fil(
 
     // Hvis ingen header, er første linje også data.
     if !har_header {
-        summer_rad(&første_linje, kolonne_nr, filsti, &mut beløp_fil)?;
+        summer_rad(&første_linje, 1, kolonne_nr, filsti, &mut beløp_fil)?;
     }
     // første_linje er ikke lenger nødvendig; slipp den før resten streames.
     drop(første_linje);
 
     // Strøm linje for linje: kun én String-allokering av gangen, slippes etter hver iterasjon.
-    for linje_result in linjer {
-        let linje = linje_result.map_err(|e| format!("Lese-feil i '{}': {}", filsti, e))?;
-        summer_rad(&linje, kolonne_nr, filsti, &mut beløp_fil)?;
+    // Linjenummer er 1-basert; første linje er allerede lest.
+    for (linjenr, linje_result) in (2..).zip(linjer) {
+        let linje = linje_result
+            .map_err(|e| format!("Lese-feil i '{}' linje {}: {}", filsti, linjenr, e))?;
+        summer_rad(&linje, linjenr, kolonne_nr, filsti, &mut beløp_fil)?;
     }
 
     Ok((header_str, filnavn, beløp_fil))
@@ -139,6 +148,7 @@ fn finn_sum_for_fil(
 /// split-iteratoren for å unngå å allokere en Vec av kolonnesegmenter.
 fn summer_rad(
     linje: &str,
+    linjenr: usize,
     kolonne_nr: usize,
     filsti: &str,
     sum: &mut f64,
@@ -146,11 +156,16 @@ fn summer_rad(
     let kolonne_str = match linje.split(';').nth(kolonne_nr) {
         Some(v) => v.trim(),
         None => {
+            // Kolonner er 0-indeksert, samme som i CLI-argumentet og `pcli header`.
+            let antall_kolonner = linje.split(';').count();
             return Err(Box::from(format!(
-                "Kolonne {} finnes ikke i filen '{}'.",
-                kolonne_nr + 1,
-                filsti
-            )))
+                "Kolonne {} finnes ikke i '{}' linje {} (raden har {} kolonner, 0-{}).",
+                kolonne_nr,
+                filsti,
+                linjenr,
+                antall_kolonner,
+                antall_kolonner - 1
+            )));
         }
     };
     if kolonne_str.is_empty() {
@@ -162,8 +177,8 @@ fn summer_rad(
             Ok(())
         }
         Err(_) => Err(Box::from(format!(
-            "Kunne ikke parse verdi '{}' som et tall i filen '{}'.",
-            kolonne_str, filsti
+            "Kunne ikke parse verdi '{}' som et tall i '{}' linje {}.",
+            kolonne_str, filsti, linjenr
         ))),
     }
 }
@@ -244,6 +259,50 @@ mod tests {
         let feil = skriv(mappe.path(), "feil.csv", "id;beløp\n1;x\n");
         let s = summer_verdier(1, &[ok, feil]).unwrap();
         assert_eq!(s.sum, 10.0);
+        assert_eq!(s.antall_summert, 1);
+        assert_eq!(s.antall_totalt(), 2);
+        assert_eq!(s.feil.len(), 1);
+        assert!(s.feil[0].contains("'x'"), "{}", s.feil[0]);
+        assert!(s.feil[0].contains("linje 2"), "{}", s.feil[0]);
+    }
+
+    #[test]
+    fn manglende_kolonne_bruker_0_indeksert_nummer() {
+        let mappe = tempdir().unwrap();
+        let fil = skriv(mappe.path(), "a.csv", "id;beløp\n1;2\n");
+        let s = summer_verdier(5, &[fil]).unwrap();
+        assert_eq!(s.antall_summert, 0);
+        assert!(
+            s.feil[0].starts_with("Kolonne 5 finnes ikke"),
+            "{}",
+            s.feil[0]
+        );
+        assert!(s.feil[0].contains("0-1"), "{}", s.feil[0]);
+    }
+
+    #[test]
+    fn filsti_står_kun_én_gang_i_feilmelding() {
+        let mappe = tempdir().unwrap();
+        let fil = skriv(mappe.path(), "a.csv", "id;beløp\n1;x\n");
+        let s = summer_verdier(1, std::slice::from_ref(&fil)).unwrap();
+        assert_eq!(s.feil[0].matches(&fil).count(), 1, "{}", s.feil[0]);
+    }
+
+    #[test]
+    fn fil_uten_header_summerer_første_linje() {
+        let mappe = tempdir().unwrap();
+        let fil = skriv(mappe.path(), "a.csv", "1;10\n2;5\n");
+        let s = summer_verdier(1, &[fil]).unwrap();
+        assert_eq!(s.sum, 15.0);
+        assert!(s.headere.contains_key(""));
+    }
+
+    #[test]
+    fn ustøttet_filtype_gir_feil() {
+        let mappe = tempdir().unwrap();
+        let fil = skriv(mappe.path(), "a.txt", "1;10\n");
+        let s = summer_verdier(1, &[fil]).unwrap();
+        assert_eq!(s.antall_summert, 0);
         assert_eq!(s.feil.len(), 1);
     }
 }
