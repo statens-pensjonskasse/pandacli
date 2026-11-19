@@ -86,26 +86,6 @@ pub enum Kommandoer {
         file_paths: Vec<String>,
     },
 
-    #[clap(name = "diff")]
-    #[command(
-        about = "*Ikke implementert* Sammenlikner to sett med filer for å finne forskjeller.",
-        long_about = "Denne kommandoen sammenligner to sett med filer og viser forskjeller mellom dem. \
-                          Den kan brukes til å finne endringer i innholdet i filene.",
-        after_help = "EKSEMPLER:\n  \
-                          pcli diff --venstre fil1.txt fil2.txt --høyre fil3.txt fil4.txt\n  \
-                          pcli diff --venstre original/*.txt --høyre nye/*.bak"
-    )]
-    Diff {
-        #[clap(long, value_name = "VENSTRE_FILER", required = true, num_args = 1.., help = "Første sett med filer som skal sammenlignes")]
-        venstre: Vec<String>,
-
-        #[clap(long, value_name = "HØYRE_FILER", required = true, num_args = 1.., help = "Andre sett med filer som skal sammenlignes")]
-        høyre: Vec<String>,
-
-        #[clap(long, value_name = "ignorerte_kolonner", num_args = 1.., help = "Kolonner i CSV-filer som skal ignoreres under sammenligning")]
-        ignorer: Vec<usize>,
-    },
-
     #[clap(name = "operasjoner")]
     #[command(
         about = "Finner hvor langt rutinefilen har kommet ved å sjekke antall handlinger som er gjennomført.",

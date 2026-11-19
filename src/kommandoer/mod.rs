@@ -1,5 +1,4 @@
 // Filnavnet på filer som representerer kommandoer i systemet
-pub mod diff_filer;
 pub mod header;
 pub(crate) mod io_utils;
 pub mod operasjoner;

@@ -48,7 +48,6 @@ pcli <kommando> --help
 | `operasjoner` | Viser hvor langt en kjøring har kommet, ut fra `operasjoner.log`. Med `-s` skrives kun `OK` eller `FEILET`. | `pcli operasjoner operasjoner.log -s` |
 | `filpartisjon` | Viser hvilken filpartisjon (1–271) et fødselsnummer eller en ID havner i. Bruker samme murmur-hash som tidsserie-lib. | `pcli filpartisjon 19060101002` |
 | `rnd` | Velger en tilfeldig verdi fra listen. | `pcli rnd a b c` |
-| `diff` | *Ikke implementert ennå.* | |
 
 ### Exit-koder
 Alle kommandoer returnerer exit-kode som kan brukes i skript og CI:
