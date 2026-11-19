@@ -18,18 +18,23 @@ A») framfor å genereres automatisk.
 
 ## Hva valideres
 
-| # | Sjekk | Kilde i `panda-orkestrering` |
-|---|-------|------------------------------|
-| 1 | **Manglende variabler** – `${x}` brukt, men ikke definert i `variabler` | `VariabelflettingJson.flettVariabler` |
-| 2 | **Uutfylte variabler** – verdi er fortsatt en `<placeholder>` | konvensjon i maler |
-| 3 | **Ubrukte variabler** – definert i `variabler`, men aldri brukt | – |
-| 4 | **Ukjent `handling`** – matcher ingen `Oversetter.navn()` eller spesial­handling | `DelegerOversetting`, `UtledHandlinger` |
-| 5 | **Ukjent `#{...}`-funksjon** | `TekstTilFunksjonHjelper.eksekver` |
-| 6 | **Strukturfeil** – manglende `operasjoner`/`handling`, `gruppe` uten `gruppeAv`, `forHver` uten `elementer`/`utfør_handlinger`, `deploy_batch` uten `batcher[].navn/versjon` | `BatchOrkestreringApp`, `UtledHandlinger`, `VariabelflettingJson`, `DeployBatchInstruksjonOversetter` |
-| 7 | **Feil bruk av listevariabel** – array-variabel må brukes som egen streng `"${x}"` | `VariabelflettingJson.flettVariabler` (array-grenen matcher `"${x}"`) |
-| 8 | **Ugyldig versjonsformat** på `gyldigVersjon` / `metainfo.støttetAvPaOrkBa01FraVersjon` | `Versjon` (regex `\d+(\.\d+)*(-SNAPSHOT)?`) |
-| 9 | **Feil `metainfo.mal`** – filnavnet i `mal` må matche filas eget navn (fanger kopier-lim-feil). **Av som standard** – aktiveres med `--streng-metainfo`, fordi filer ofte blir omdøpt (f.eks. til `flytkontroll-<id>.json`) før de kjøres. | konvensjon i maler |
-| 10 | **Feil `grunnlagsdataMappe` for batch** – filer kopieres til `grunnlagsdataMappeTil` for en batch (`kopier_fra_arkiv_til_batch`), men batchen kjøres senere med en annen `grunnlagsdataMappe` → batchen finner ikke filene. Tilstanden per batch nullstilles av `rydd_grunnlagsdata_for_batch`. | `kopier_fra_arkiv_til_batch` / batch-kjøring i `panda-orkestrering` |
+| # | Sjekk | Alvorlighet | Kilde i `panda-orkestrering` |
+|---|-------|-------------|------------------------------|
+| 1 | **Manglende variabler** – `${x}` brukt, men ikke definert i `variabler` | ❌ Feil | `VariabelflettingJson.flettVariabler` |
+| 2 | **Uutfylte variabler** – verdi er fortsatt en `<placeholder>` | ❓ Advarsel | konvensjon i maler |
+| 3 | **Ubrukte variabler** – definert i `variabler`, men aldri brukt | ⚠️ Advarsel | – |
+| 4 | **Ukjent `handling`** – matcher ingen `Oversetter.navn()` eller spesial­handling | ❌ Feil | `DelegerOversetting`, `UtledHandlinger` |
+| 5 | **Ukjent `#{...}`-funksjon** | ❌ Feil | `TekstTilFunksjonHjelper.eksekver` |
+| 6 | **Strukturfeil** – manglende `operasjoner`/`handling`, `gruppe` uten `gruppeAv`, `forHver` uten `elementer`/`utfør_handlinger`, `deploy_batch` uten `batcher[].navn/versjon` | ❌ Feil | `BatchOrkestreringApp`, `UtledHandlinger`, `VariabelflettingJson`, `DeployBatchInstruksjonOversetter` |
+| 7 | **Feil bruk av listevariabel** – array-variabel må brukes som egen streng `"${x}"` | ❌ Feil | `VariabelflettingJson.flettVariabler` (array-grenen matcher `"${x}"`) |
+| 8 | **Ugyldig versjonsformat** på `gyldigVersjon` / `metainfo.støttetAvPaOrkBa01FraVersjon` | ❌ Feil | `Versjon` (regex `\d+(\.\d+)*(-SNAPSHOT)?`) |
+| 9 | **Feil `metainfo.mal`** – filnavnet i `mal` må matche filas eget navn (fanger kopier-lim-feil). **Av som standard** – aktiveres med `--streng-metainfo`, fordi filer ofte blir omdøpt (f.eks. til `flytkontroll-<id>.json`) før de kjøres. | ❌ Feil | konvensjon i maler |
+| 10 | **Feil `grunnlagsdataMappe` for batch** – filer kopieres til `grunnlagsdataMappeTil` for en batch (`kopier_fra_arkiv_til_batch`), men batchen kjøres senere med en annen `grunnlagsdataMappe` → batchen finner ikke filene. Tilstanden per batch nullstilles av `rydd_grunnlagsdata_for_batch`. | ❌ Feil | `kopier_fra_arkiv_til_batch` / batch-kjøring i `panda-orkestrering` |
+
+**❌ Feil** betyr at fila ikke vil fungere, og gir exit-kode 1. **Advarsler**
+gir ikke feilende exit-kode, siden maler naturlig har uutfylte
+`<plassholdere>`. Grensen settes i `ValidationResult::har_kritiske_feil` i
+[`rutinefil_validering.rs`](../src/kommandoer/rutinefil_validering.rs).
 
 ---
 
@@ -91,8 +96,10 @@ Når `panda-orkestrering` får en ny handling eller funksjon:
    gyldige filer blir feilaktig flagget:
    ```bash
    cd panda-orkestrering-rutiner
-   for f in $(find maler -name '*.json'); do pcli valider "$f"; done
+   find maler -name '*.json' -exec pcli valider {} + && echo "Alle maler OK"
    ```
+   Exit-koden er 1 hvis minst én mal har feil. Advarsler om uutfylte
+   variabler er forventet i maler.
 
 ---
 
