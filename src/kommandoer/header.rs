@@ -5,7 +5,7 @@ use std::io::Read;
 
 pub fn header(filsti: &String) -> Result<Vec<String>, String> {
 
-    let innhold = les_innhold_fil(filsti).ok().unwrap();
+    let innhold = les_innhold_fil(filsti).map_err(|e| e.to_string())?;
     let rader: Vec<&str> = innhold.lines().collect();
 
     if rader.is_empty() {

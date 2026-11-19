@@ -5,6 +5,7 @@ mod utils;
 
 use clap::Parser;
 use cli::Cli;
+use std::process::ExitCode;
 
 use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::diff_filer::diff_filer;
@@ -16,19 +17,22 @@ use kommandoer::operasjoner::operasjoner;
 use uuid::Uuid;
 use crate::kommandoer::panda_murmur::panda_murmur;
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    match &cli.kommando {
+    // Hver kommando gir `true` ved suksess. Feil gir exit-kode 1 slik at
+    // pcli kan brukes i skript og CI (f.eks. `pcli valider *.json || exit 1`).
+    let suksess = match &cli.kommando {
 
-        cli::Kommandoer::VelgTilfeldig {verdier} => {
-            velg_tilfeldig(verdier.clone());
-        }
+        cli::Kommandoer::VelgTilfeldig {verdier} => velg_tilfeldig(verdier.clone()),
 
         cli::Kommandoer::RutinefilValider { file_paths, streng_metainfo } => {
+            // Validerer alle filene (ingen kortslutning), feiler hvis minst én feilet.
+            let mut alle_gyldige = true;
             for path in file_paths {
-                rutinefil_valider(path, *streng_metainfo);
+                alle_gyldige &= rutinefil_valider(path, *streng_metainfo);
             }
+            alle_gyldige
         }
 
         cli::Kommandoer::RutinefilVariabler { file_path } => rutinefil_variabler(file_path),
@@ -37,7 +41,10 @@ fn main() {
             kolonne_nr,
             file_paths,
         } => match summer_verdier(*kolonne_nr, file_paths) {
-            Ok((antall_filer, sum, headere)) => {
+            Ok(summering) => {
+                let antall_filer = summering.antall_filer;
+                let sum = summering.sum;
+                let headere = &summering.headere;
 
                 if headere.len() > 1 {
                     println!(
@@ -54,7 +61,7 @@ fn main() {
                     );
 
                     println!("Headere og deres respektive filer:");
-                    for (header, filer) in &headere {
+                    for (header, filer) in headere {
                         let file_list = if filer.len() > 5 {
                             let første_fem: Vec<&str> =
                                 filer.iter().take(5).map(AsRef::as_ref).collect();
@@ -72,9 +79,19 @@ fn main() {
                         utils::formater_tall(sum)
                     );
                 }
+
+                if !summering.feil.is_empty() {
+                    eprintln!(
+                        "❌ {} av {} filer kunne ikke summeres og er ikke med i summen.",
+                        summering.feil.len(),
+                        antall_filer
+                    );
+                }
+                summering.feil.is_empty()
             }
             Err(e) => {
-                eprintln!("Feil under summering: {}", e)
+                eprintln!("Feil under summering: {}", e);
+                false
             }
         },
         cli::Kommandoer::Diff {
@@ -85,29 +102,36 @@ fn main() {
             let _ = diff_filer(venstre.to_vec(), høyre.to_vec(), ignorer.to_vec()); //ignorerer resultatet midlertidig
             eprintln!("Diff kommando er ikke implementert ennå.");
             eprintln!("Bruk 'pcli --help' for mer informasjon om tilgjengelige kommandoer.");
+            false
         }
 
         cli::Kommandoer::Operasjoner { file_path, status } => {
             let result = operasjoner(file_path);
 
-            if *status == true {
+            if *status {
                 let status_str = if result.is_ok() { "OK" } else { "FEILET" };
                 eprintln!("{}", status_str);
             } else {
-                match result {
+                match &result {
                     Ok(value) => eprintln!("{}", value),
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
+            result.is_ok()
         }
 
         cli::Kommandoer::Header { file_path } => {
-            let result = header(file_path);
-
-            let unwrapped = result.unwrap();
-
-            eprintln!("Fant {} headere:", unwrapped.len());
-            eprintln!("{}", unwrapped.join("\n"));
+            match header(file_path) {
+                Ok(headere) => {
+                    eprintln!("Fant {} headere:", headere.len());
+                    eprintln!("{}", headere.join("\n"));
+                    true
+                }
+                Err(e) => {
+                    eprintln!("Feil: {}", e);
+                    false
+                }
+            }
         },
 
         cli::Kommandoer::Filpartisjon {
@@ -120,6 +144,13 @@ fn main() {
                       unwrapped,
                       unwrapped,
                       Uuid::new_v4());
+            true
         }
+    };
+
+    if suksess {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
 }

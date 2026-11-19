@@ -6,10 +6,16 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use indicatif::{ProgressBar, ProgressStyle};
 
-pub fn summer_verdier(
-    kolonne_nr: usize,
-    filstier: &[String],
-) -> Result<(usize, f64, HashMap<String, Vec<String>>), String> {
+pub struct Summering {
+    pub antall_filer: usize,
+    pub sum: f64,
+    /// Header for kolonnen -> filene som har den headeren.
+    pub headere: HashMap<String, Vec<String>>,
+    /// Feilmeldinger for filer som ikke kunne summeres (er ikke med i `sum`).
+    pub feil: Vec<String>,
+}
+
+pub fn summer_verdier(kolonne_nr: usize, filstier: &[String]) -> Result<Summering, String> {
     let antall_filer = filstier.len();
 
     let pb = ProgressBar::new(antall_filer as u64);
@@ -63,16 +69,19 @@ pub fn summer_verdier(
         }
     }
 
-    if !feil.is_empty() {
-        for f in &feil {
-            eprintln!("Advarsel: {}", f);
-        }
+    for f in &feil {
+        eprintln!("Advarsel: {}", f);
     }
 
     pb.finish_with_message("All files processed");
     log_minnebruk("ferdig summering");
 
-    Ok((antall_filer, totalsum, headere))
+    Ok(Summering {
+        antall_filer,
+        sum: totalsum,
+        headere,
+        feil,
+    })
 }
 
 fn finn_sum_for_fil(
@@ -202,4 +211,39 @@ fn aapne_fil_som_leser(filsti: &str) -> Result<Box<dyn BufRead>, Box<dyn Error>>
             }
             #[cfg(not(target_os = "linux"))]
             let _ = kontekst;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    fn skriv(mappe: &std::path::Path, navn: &str, innhold: &str) -> String {
+        let sti = mappe.join(navn);
+        std::fs::File::create(&sti)
+            .unwrap()
+            .write_all(innhold.as_bytes())
+            .unwrap();
+        sti.to_string_lossy().to_string()
+    }
+
+    #[test]
+    fn summerer_uten_feil() {
+        let mappe = tempdir().unwrap();
+        let fil = skriv(mappe.path(), "a.csv", "id;beløp\n1;10.5\n2;\n3;4.5\n");
+        let s = summer_verdier(1, &[fil]).unwrap();
+        assert_eq!(s.sum, 15.0);
+        assert!(s.feil.is_empty());
+    }
+
+    #[test]
+    fn rapporterer_fil_som_feiler() {
+        let mappe = tempdir().unwrap();
+        let ok = skriv(mappe.path(), "ok.csv", "id;beløp\n1;10\n");
+        let feil = skriv(mappe.path(), "feil.csv", "id;beløp\n1;x\n");
+        let s = summer_verdier(1, &[ok, feil]).unwrap();
+        assert_eq!(s.sum, 10.0);
+        assert_eq!(s.feil.len(), 1);
+    }
 }

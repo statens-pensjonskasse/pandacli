@@ -2,14 +2,15 @@ use std::fs;
 
 use serde_json::Value;
 
-pub fn rutinefil_variabler(filsti: &str) {
+/// Returnerer `false` hvis fila ikke kunne leses eller parses.
+pub fn rutinefil_variabler(filsti: &str) -> bool {
     const VARIABLER_KEY: &str = "variabler";
 
     let filinnhold = match fs::read_to_string(filsti) {
         Ok(innhold) => innhold,
         Err(e) => {
             eprintln!("Klarte ikke lese filen: {}", e);
-            return;
+            return false;
         }
     };
 
@@ -17,7 +18,7 @@ pub fn rutinefil_variabler(filsti: &str) {
         Ok(json) => json,
         Err(e) => {
             eprintln!("Ikke gyldig JSON format: {}", e);
-            return;
+            return false;
         }
     };
 
@@ -32,7 +33,6 @@ pub fn rutinefil_variabler(filsti: &str) {
     match definerte_variabler.as_slice() {  
         [] => {
             println!("Ingen variabler er definert i rutinefilen '{}'.", filsti);
-            return;
         },
         variabler => {
             println!("Følgende variabler er definert i '{}'.", filsti);
@@ -41,4 +41,5 @@ pub fn rutinefil_variabler(filsti: &str) {
             }
         }
     }
+    true
 }
