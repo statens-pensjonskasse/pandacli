@@ -9,20 +9,24 @@ permissions:
   contents: write
 
 jobs:
-  # Only publish when the merge commit is a release commit
+  # Publiser kun når siste commit på main er en release-commit.
+  # Leser emnet fra git i stedet for github.event.head_commit, som er tomt
+  # ved manuell kjøring (workflow_dispatch). Manuell kjøring kan dermed brukes
+  # til å publisere en release på nytt hvis noe feilet.
   gate:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     outputs:
       should_publish: ${{ steps.g.outputs.should_publish }}
     steps:
+      - uses: actions/checkout@v4
+
       - id: g
         shell: bash
-        env:
-          MSG: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
-          # Sjekk kun første linje (emnet), ikke hele meldingen.
-          SUBJECT="${MSG%%$'\n'*}"
+          SUBJECT="$(git log -1 --format=%s)"
+          echo "Siste commit: $SUBJECT"
           if [[ "$SUBJECT" =~ ^chore\(release\):\ v ]]; then
             echo "should_publish=true" >> "$GITHUB_OUTPUT"
           else
@@ -102,7 +106,9 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ steps.v.outputs.tag }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
+          # Sjekk mot origin: checkout henter ikke tags, så en lokal sjekk
+          # finner aldri en eksisterende tag og push feiler ved ny kjøring.
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
             echo "Tag exists: $TAG"
           else
             git tag "$TAG"
@@ -122,7 +128,8 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release exists: $TAG"
           else
-            gh release create "$TAG" --title "$TAG" --notes "Release $TAG" --draft
+            # Release notes genereres fra PR-ene siden forrige release.
+            gh release create "$TAG" --title "$TAG" --generate-notes --draft
           fi
 
           # Upload all binaries (from matrix builds)
