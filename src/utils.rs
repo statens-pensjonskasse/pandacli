@@ -13,9 +13,7 @@ pub fn formater_tall(number: f64) -> String {
         Some(rest) => ("-", rest),
         None => ("", avrunding.as_str()),
     };
-    let (heltall, desimaler) = uten_fortegn
-        .split_once('.')
-        .unwrap_or((uten_fortegn, "00"));
+    let (heltall, desimaler) = uten_fortegn.split_once('.').unwrap_or((uten_fortegn, "00"));
 
     let mut gruppert = String::with_capacity(heltall.len() + heltall.len() / 3);
     for (i, siffer) in heltall.chars().enumerate() {

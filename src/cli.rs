@@ -99,8 +99,13 @@ pub enum Kommandoer {
                   pcli operasjoner operasjoner.log --status\n  \
                   pcli operasjoner operasjoner.log -s"
     )]
-    Operasjoner {file_path: String,
-        #[clap(short, long, help = "Vis kun status for kjøringen. OK hvis kjøringen er ferdig eller kjører, FEILET hvis det oppstod en feil.")]
+    Operasjoner {
+        file_path: String,
+        #[clap(
+            short,
+            long,
+            help = "Vis kun status for kjøringen. OK hvis kjøringen er ferdig eller kjører, FEILET hvis det oppstod en feil."
+        )]
         status: bool,
     },
 
@@ -111,7 +116,7 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli header fil.csv"
     )]
-    Header {file_path: String },
+    Header { file_path: String },
     #[clap(name = "filpartisjon")]
     #[command(
         about = "Printer ut hvilken partisjon et fødselsnummer eller en ID tilhører.",
@@ -120,5 +125,5 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli filpartisjon D9F47A69-E85E-42A0-9686-151835F38ACB"
     )]
-    Filpartisjon {id: String },
+    Filpartisjon { id: String },
 }

@@ -23,7 +23,7 @@ pub fn operasjoner(filsti: &str) -> Result<String, String> {
 
         if let Some(num) = linje.strip_prefix("Handling: ") {
             if let Ok(val) = num.trim().parse::<u32>() {
-                maks = maks.or_else(|| Some(val));
+                maks = maks.or(Some(val));
                 resterende += 1;
             }
         }
@@ -54,7 +54,8 @@ pub fn operasjoner(filsti: &str) -> Result<String, String> {
     }
 
     Ok(format!(
-        "Fremdrift: {prosent}% ferdig, kjører {} ({resterende} av {totalt})", handling.as_deref().unwrap_or("ukjent")
+        "Fremdrift: {prosent}% ferdig, kjører {} ({resterende} av {totalt})",
+        handling.as_deref().unwrap_or("ukjent")
     ))
 }
 
@@ -78,7 +79,10 @@ mod tests {
     #[test]
     fn feil_før_første_handling_gir_feil_uten_panikk() {
         let r = kjør("Operasjon feilet med: noe gikk galt\n");
-        assert_eq!(r, Err("Kjøringen har feilet for ukjent handling".to_string()));
+        assert_eq!(
+            r,
+            Err("Kjøringen har feilet for ukjent handling".to_string())
+        );
     }
 
     #[test]

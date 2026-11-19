@@ -7,15 +7,15 @@ use clap::Parser;
 use cli::Cli;
 use std::process::ExitCode;
 
+use crate::kommandoer::panda_murmur::panda_murmur;
 use crate::kommandoer::rutinefil_variabler::rutinefil_variabler;
 use kommandoer::diff_filer::diff_filer;
 use kommandoer::header::header;
+use kommandoer::operasjoner::operasjoner;
 use kommandoer::rutinefil_validering::rutinefil_valider;
 use kommandoer::summer_verdier::summer_verdier;
 use kommandoer::velg_tilfeldig::velg_tilfeldig;
-use kommandoer::operasjoner::operasjoner;
 use uuid::Uuid;
-use crate::kommandoer::panda_murmur::panda_murmur;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -23,10 +23,12 @@ fn main() -> ExitCode {
     // Hver kommando gir `true` ved suksess. Feil gir exit-kode 1 slik at
     // pcli kan brukes i skript og CI (f.eks. `pcli valider *.json || exit 1`).
     let suksess = match &cli.kommando {
+        cli::Kommandoer::VelgTilfeldig { verdier } => velg_tilfeldig(verdier.clone()),
 
-        cli::Kommandoer::VelgTilfeldig {verdier} => velg_tilfeldig(verdier.clone()),
-
-        cli::Kommandoer::RutinefilValider { file_paths, streng_metainfo } => {
+        cli::Kommandoer::RutinefilValider {
+            file_paths,
+            streng_metainfo,
+        } => {
             // Validerer alle filene (ingen kortslutning), feiler hvis minst én feilet.
             let mut alle_gyldige = true;
             for path in file_paths {
@@ -71,10 +73,7 @@ fn main() -> ExitCode {
                         sum
                     );
                 } else {
-                    println!(
-                        "Summerte {} filer, sum: {}",
-                        summering.antall_summert, sum
-                    );
+                    println!("Summerte {} filer, sum: {}", summering.antall_summert, sum);
                     println!(
                         "Fant {} forskjellige headere for kolonne {}:",
                         headere.len(),
@@ -132,30 +131,28 @@ fn main() -> ExitCode {
             result.is_ok()
         }
 
-        cli::Kommandoer::Header { file_path } => {
-            match header(file_path) {
-                Ok(headere) => {
-                    eprintln!("Fant {} headere:", headere.len());
-                    eprintln!("{}", headere.join("\n"));
-                    true
-                }
-                Err(e) => {
-                    eprintln!("Feil: {}", e);
-                    false
-                }
+        cli::Kommandoer::Header { file_path } => match header(file_path) {
+            Ok(headere) => {
+                eprintln!("Fant {} headere:", headere.len());
+                eprintln!("{}", headere.join("\n"));
+                true
+            }
+            Err(e) => {
+                eprintln!("Feil: {}", e);
+                false
             }
         },
 
-        cli::Kommandoer::Filpartisjon {
-            id
-        } => {
+        cli::Kommandoer::Filpartisjon { id } => {
             let result = panda_murmur(id);
             let unwrapped = result.unwrap();
 
-            eprintln!("Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
-                      unwrapped,
-                      unwrapped,
-                      Uuid::new_v4());
+            eprintln!(
+                "Plasseres i partisjon {}. Eksempel på filnavn: <filnavn>{}-{}.csv",
+                unwrapped,
+                unwrapped,
+                Uuid::new_v4()
+            );
             true
         }
     };

@@ -1,10 +1,10 @@
 use flate2::read::GzDecoder;
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use indicatif::{ProgressBar, ProgressStyle};
 
 pub struct Summering {
     /// Antall filer som ble summert uten feil (er med i `sum`).
@@ -30,10 +30,10 @@ pub fn summer_verdier(kolonne_nr: usize, filstier: &[String]) -> Result<Summerin
     let pb = ProgressBar::new(antall_filer as u64);
     pb.set_style(
         ProgressStyle::with_template(
-            "{spinner:.blue} [{elapsed_precise}] {bar:30.green/black} {pos}/{len} ({percent}%)"
+            "{spinner:.blue} [{elapsed_precise}] {bar:30.green/black} {pos}/{len} ({percent}%)",
         )
-            .unwrap()
-            .progress_chars("█▇▆▅▄▃▂▁  "),
+        .unwrap()
+        .progress_chars("█▇▆▅▄▃▂▁  "),
     );
 
     // Begrenser parallellisme for å unngå for mange samtidige fil-I/O-operasjoner ved store datamengder.
@@ -95,7 +95,11 @@ fn finn_sum_for_fil(
     kolonne_nr: usize,
     filsti: &str,
 ) -> Result<(String, String, f64), Box<dyn Error>> {
-    let filnavn = filsti.split('/').last().unwrap_or("ukjent").to_string();
+    let filnavn = filsti
+        .split('/')
+        .next_back()
+        .unwrap_or("ukjent")
+        .to_string();
 
     let reader = aapne_fil_som_leser(filsti)?;
     let mut linjer = reader.lines();
@@ -103,7 +107,12 @@ fn finn_sum_for_fil(
     // Leser kun første linje for å detektere header — ingen full fil-allokering.
     let første_linje = match linjer.next() {
         Some(Ok(l)) => l,
-        Some(Err(e)) => return Err(Box::from(format!("Lese-feil i '{}' linje 1: {}", filsti, e))),
+        Some(Err(e)) => {
+            return Err(Box::from(format!(
+                "Lese-feil i '{}' linje 1: {}",
+                filsti, e
+            )));
+        }
         None => return Ok((String::new(), filnavn, 0.0)),
     };
 
@@ -111,7 +120,7 @@ fn finn_sum_for_fil(
     let har_header = første_linje
         .split(';')
         .nth(kolonne_nr)
-        .map_or(true, |v| v.trim().parse::<f64>().is_err());
+        .is_none_or(|v| v.trim().parse::<f64>().is_err());
 
     let header_str = if har_header {
         første_linje
@@ -203,29 +212,29 @@ fn aapne_fil_som_leser(filsti: &str) -> Result<Box<dyn BufRead>, Box<dyn Error>>
     }
 }
 
-        /// Logger resident set size (RSS) til stderr når PCLI_MEM_LOG=1 er satt.
-        /// På Linux leses fra /proc/self/status. Gjør ingenting på andre plattformer.
-        fn log_minnebruk(kontekst: &str) {
-            if std::env::var_os("PCLI_MEM_LOG").is_none() {
-                return;
-            }
-            #[cfg(target_os = "linux")]
-            {
-                if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
-                    for linje in status.lines() {
-                        if linje.starts_with("VmRSS:") {
-                            if let Some(kb_str) = linje.split_whitespace().nth(1) {
-                                if let Ok(kb) = kb_str.parse::<u64>() {
-                                    eprintln!("[mem] RSS: {} MB | {}", kb / 1024, kontekst);
-                                }
-                            }
-                            break;
+/// Logger resident set size (RSS) til stderr når PCLI_MEM_LOG=1 er satt.
+/// På Linux leses fra /proc/self/status. Gjør ingenting på andre plattformer.
+fn log_minnebruk(kontekst: &str) {
+    if std::env::var_os("PCLI_MEM_LOG").is_none() {
+        return;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
+            for linje in status.lines() {
+                if linje.starts_with("VmRSS:") {
+                    if let Some(kb_str) = linje.split_whitespace().nth(1) {
+                        if let Ok(kb) = kb_str.parse::<u64>() {
+                            eprintln!("[mem] RSS: {} MB | {}", kb / 1024, kontekst);
                         }
                     }
+                    break;
                 }
             }
-            #[cfg(not(target_os = "linux"))]
-            let _ = kontekst;
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = kontekst;
 }
 
 #[cfg(test)]

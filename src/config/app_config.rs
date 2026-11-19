@@ -25,8 +25,9 @@ impl AppConfig {
             let data = fs::read_to_string(&path).expect("Kunne ikke lese konfigurasjonsfilen");
             serde_json::from_str(&data).expect("Kunne ikke parse konfigurasjonsfilen")
         } else {
-
-            println!("Før kommandolinjeverktøyet brukes for første gang, må det defineres et par ting:");
+            println!(
+                "Før kommandolinjeverktøyet brukes for første gang, må det defineres et par ting:"
+            );
             let server_url = Self::prompt("Lyn url (inkluder bruker):");
             let website_url = Self::prompt("URL for nexus:");
 

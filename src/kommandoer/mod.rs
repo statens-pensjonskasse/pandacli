@@ -1,13 +1,13 @@
 // Filnavnet på filer som representerer kommandoer i systemet
-pub mod rutinefil_validering;
-pub mod rutinefil_katalog;
+pub mod diff_filer;
+pub mod header;
+pub(crate) mod io_utils;
+pub mod operasjoner;
+pub mod panda_murmur;
 #[cfg(test)]
 mod rutinefil_fixtures;
+pub mod rutinefil_katalog;
+pub mod rutinefil_validering;
 pub mod rutinefil_variabler;
-pub(crate) mod io_utils;
 pub mod summer_verdier;
-pub mod diff_filer;
 pub mod velg_tilfeldig;
-pub mod operasjoner;
-pub mod header;
-pub mod panda_murmur;
