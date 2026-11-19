@@ -17,10 +17,13 @@ jobs:
     steps:
       - id: g
         shell: bash
+        env:
+          MSG: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
-          MSG='${{ github.event.head_commit.message }}'
-          if echo "$MSG" | grep -qE '^chore\(release\): v'; then
+          # Sjekk kun første linje (emnet), ikke hele meldingen.
+          SUBJECT="${MSG%%$'\n'*}"
+          if [[ "$SUBJECT" =~ ^chore\(release\):\ v ]]; then
             echo "should_publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
