@@ -49,9 +49,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+      # Installerer versjonen fra rust-toolchain.toml, pluss target for bygget.
+      - name: Installer Rust
+        shell: bash
+        run: |
+          rustup toolchain install
+          rustup target add "${{ matrix.target }}"
 
       - name: Build
         shell: bash

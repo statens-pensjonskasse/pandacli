@@ -1,0 +1,6 @@
+# Låser Rust-versjonen slik at lokalt bygg og CI bruker samme kompilator og
+# clippy. Uten dette kan CI feile når en ny stable-versjon får nye lints.
+# Oppgrader ved å endre versjonen her og rette eventuelle nye clippy-feil.
+[toolchain]
+channel = "1.100"
+components = ["clippy", "rustfmt"]
