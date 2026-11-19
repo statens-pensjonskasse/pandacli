@@ -541,16 +541,22 @@ fn hent_variabelverdier(json: &Value) -> HashMap<String, String> {
     verdier
 }
 
-/// Løser opp en ren `${navn}`-referanse til verdien sin. Literaler returneres
-/// som de er. Udefinerte variabler gir `None` (da hopper vi over sjekken for å
-/// unngå falske positive – `manglende_variabler` fanger dem allerede).
+/// Fletter inn alle `${navn}`-referanser i verdien, f.eks. `"pre_${x}"`, og
+/// returnerer resultatet. Literaler returneres som de er. Hvis en referanse er
+/// udefinert (eller ikke lukket) gir vi `None`, og sjekken hoppes over for å
+/// unngå falske positive – `manglende_variabler` fanger dem allerede.
 fn resolver_mappeverdi(raw: &str, variabler: &HashMap<String, String>) -> Option<String> {
-    if er_variabelreferanse(raw) {
-        let navn = &raw[2..raw.len() - 1];
-        variabler.get(navn).cloned()
-    } else {
-        Some(raw.to_string())
+    let mut resultat = String::with_capacity(raw.len());
+    let mut rest = raw;
+    while let Some(start) = rest.find("${") {
+        resultat.push_str(&rest[..start]);
+        let etter = &rest[start + 2..];
+        let slutt = etter.find('}')?;
+        resultat.push_str(variabler.get(&etter[..slutt])?);
+        rest = &etter[slutt + 1..];
     }
+    resultat.push_str(rest);
+    Some(resultat)
 }
 
 fn spor_grunnlagsdatamappe(
@@ -964,6 +970,87 @@ mod tests {
     #[test]
     fn rutinefil_valider_returnerer_false_for_manglende_fil() {
         assert!(!rutinefil_valider(&ressurs("finnes_ikke.json"), true));
+    }
+
+    #[test]
+    fn godtar_lik_grunnlagsdatamappe_med_sammensatt_verdi() {
+        // Samme mappe skrevet som "${mappe}" ved kopiering og som
+        // "grunnlagsdata_${dato}" ved kjøring. Ga tidligere falsk feil fordi
+        // den sammensatte verdien ble sammenlignet uten fletting.
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": {
+                "dato": "2026-10-01",
+                "mappe": "grunnlagsdata_2026-10-01"
+            },
+            "operasjoner": [
+                { "handling": "kopier_fra_arkiv_til_batch", "batchTil": "pa_fak_ba_09",
+                  "grunnlagsdataMappeTil": "${mappe}" },
+                { "handling": "pa_fak_ba_09", "grunnlagsdataMappe": "grunnlagsdata_${dato}" }
+            ]
+        }"#;
+        let r = valider(innhold);
+        assert!(
+            r.grunnlagsdatamappe_feil.is_empty(),
+            "forventet ingen feil, fikk: {:?}",
+            r.grunnlagsdatamappe_feil
+        );
+    }
+
+    #[test]
+    fn oppdager_feil_grunnlagsdatamappe_med_sammensatt_verdi() {
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": { "dato": "2026-10-01", "annenDato": "2026-10-02" },
+            "operasjoner": [
+                { "handling": "kopier_fra_arkiv_til_batch", "batchTil": "pa_fak_ba_09",
+                  "grunnlagsdataMappeTil": "grunnlagsdata_${dato}" },
+                { "handling": "pa_fak_ba_09", "grunnlagsdataMappe": "grunnlagsdata_${annenDato}" }
+            ]
+        }"#;
+        let r = valider(innhold);
+        assert_eq!(
+            r.grunnlagsdatamappe_feil.len(),
+            1,
+            "forventet én feil, fikk: {:?}",
+            r.grunnlagsdatamappe_feil
+        );
+        assert!(r.grunnlagsdatamappe_feil[0].contains("grunnlagsdata_2026-10-02"));
+    }
+
+    #[test]
+    fn hopper_over_grunnlagsdatamappe_med_udefinert_variabel() {
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": { "mappe": "grunnlagsdata_A" },
+            "operasjoner": [
+                { "handling": "kopier_fra_arkiv_til_batch", "batchTil": "pa_fak_ba_09",
+                  "grunnlagsdataMappeTil": "${mappe}" },
+                { "handling": "pa_fak_ba_09", "grunnlagsdataMappe": "pre_${finnesIkke}" }
+            ]
+        }"#;
+        let r = valider(innhold);
+        assert!(r.grunnlagsdatamappe_feil.is_empty());
+        assert!(r.manglende_variabler.contains(&"finnesIkke".to_string()));
+    }
+
+    #[test]
+    fn resolver_mappeverdi_fletter_alle_referanser() {
+        let variabler: HashMap<String, String> = [("a", "1"), ("b", "2")]
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        assert_eq!(resolver_mappeverdi("x", &variabler), Some("x".to_string()));
+        assert_eq!(
+            resolver_mappeverdi("${a}", &variabler),
+            Some("1".to_string())
+        );
+        assert_eq!(
+            resolver_mappeverdi("p_${a}_${b}_s", &variabler),
+            Some("p_1_2_s".to_string())
+        );
+        assert_eq!(resolver_mappeverdi("${c}", &variabler), None);
+        assert_eq!(resolver_mappeverdi("p_${a", &variabler), None);
     }
 
     #[test]
