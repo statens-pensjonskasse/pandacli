@@ -545,6 +545,8 @@ fn hent_variabelverdier(json: &Value) -> HashMap<String, String> {
 /// returnerer resultatet. Literaler returneres som de er. Hvis en referanse er
 /// udefinert (eller ikke lukket) gir vi `None`, og sjekken hoppes over for å
 /// unngå falske positive – `manglende_variabler` fanger dem allerede.
+/// Det samme gjelder verdier som selv inneholder `${`: vi resolver bare ett
+/// nivå, så en delvis resolvet verdi kan ikke sammenlignes trygt.
 fn resolver_mappeverdi(raw: &str, variabler: &HashMap<String, String>) -> Option<String> {
     let mut resultat = String::with_capacity(raw.len());
     let mut rest = raw;
@@ -552,7 +554,11 @@ fn resolver_mappeverdi(raw: &str, variabler: &HashMap<String, String>) -> Option
         resultat.push_str(&rest[..start]);
         let etter = &rest[start + 2..];
         let slutt = etter.find('}')?;
-        resultat.push_str(variabler.get(&etter[..slutt])?);
+        let verdi = variabler.get(&etter[..slutt])?;
+        if verdi.contains("${") {
+            return None;
+        }
+        resultat.push_str(verdi);
         rest = &etter[slutt + 1..];
     }
     resultat.push_str(rest);
@@ -1035,11 +1041,36 @@ mod tests {
     }
 
     #[test]
+    fn hopper_over_grunnlagsdatamappe_med_nøstet_variabel() {
+        // "${mappe}" resolves bare ett nivå til "grunnlagsdata_${dato}", mens
+        // kjøringen resolves til "grunnlagsdata_2026-10-01". Skal ikke gi falsk feil.
+        let innhold = r#"{
+            "navn": "x",
+            "variabler": {
+                "dato": "2026-10-01",
+                "mappe": "grunnlagsdata_${dato}"
+            },
+            "operasjoner": [
+                { "handling": "kopier_fra_arkiv_til_batch", "batchTil": "pa_fak_ba_09",
+                  "grunnlagsdataMappeTil": "${mappe}" },
+                { "handling": "pa_fak_ba_09", "grunnlagsdataMappe": "grunnlagsdata_${dato}" }
+            ]
+        }"#;
+        let r = valider(innhold);
+        assert!(
+            r.grunnlagsdatamappe_feil.is_empty(),
+            "forventet ingen feil, fikk: {:?}",
+            r.grunnlagsdatamappe_feil
+        );
+    }
+
+    #[test]
     fn resolver_mappeverdi_fletter_alle_referanser() {
-        let variabler: HashMap<String, String> = [("a", "1"), ("b", "2")]
+        let mut variabler: HashMap<String, String> = [("a", "1"), ("b", "2")]
             .into_iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect();
+        variabler.insert("n".to_string(), "p_${a}".to_string());
         assert_eq!(resolver_mappeverdi("x", &variabler), Some("x".to_string()));
         assert_eq!(
             resolver_mappeverdi("${a}", &variabler),
@@ -1051,6 +1082,8 @@ mod tests {
         );
         assert_eq!(resolver_mappeverdi("${c}", &variabler), None);
         assert_eq!(resolver_mappeverdi("p_${a", &variabler), None);
+        // Nøstet referanse resolves ikke videre – sjekken hoppes over.
+        assert_eq!(resolver_mappeverdi("${n}", &variabler), None);
     }
 
     #[test]
