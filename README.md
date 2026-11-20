@@ -48,7 +48,6 @@ pcli <kommando> --help
 | `operasjoner` | Viser hvor langt en kjøring har kommet, ut fra `operasjoner.log`. Med `-s` skrives kun `OK` eller `FEILET`. | `pcli operasjoner operasjoner.log -s` |
 | `filpartisjon` | Viser hvilken filpartisjon (1–271) et fødselsnummer eller en ID havner i. Bruker samme murmur-hash som tidsserie-lib. | `pcli filpartisjon 19060101002` |
 | `rnd` | Velger en tilfeldig verdi fra listen. | `pcli rnd a b c` |
-| `diff` | *Ikke implementert ennå.* | |
 
 ### Exit-koder
 Alle kommandoer returnerer exit-kode som kan brukes i skript og CI:
@@ -125,8 +124,14 @@ Summerte 1 filer med header 'beløp', sum: 15.50
 ## Utvikling
 
 ### Forutsetninger
-- [Rust](https://rustup.rs/) (stable). CI bruker siste stable-versjon, så kjør
-  `rustup update` jevnlig for å få de samme clippy-sjekkene lokalt.
+- [rustup](https://rustup.rs/). Rust-versjonen er låst i
+  [`rust-toolchain.toml`](rust-toolchain.toml), og rustup laster den ned
+  automatisk første gang du bygger. Lokalt bygg og CI bruker dermed samme
+  kompilator og samme clippy-sjekker.
+
+For å oppgradere Rust: endre `channel` i `rust-toolchain.toml`, kjør
+`cargo clippy --all-targets -- -D warnings` og rett eventuelle nye feil i
+samme commit.
 
 ### Bygg og test
 ```sh

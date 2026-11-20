@@ -17,9 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy, rustfmt
+    # Installerer versjonen og komponentene fra rust-toolchain.toml.
+    - name: Installer Rust
+      run: rustup toolchain install
 
     - uses: Swatinem/rust-cache@v2
 

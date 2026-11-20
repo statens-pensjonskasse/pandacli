@@ -29,7 +29,7 @@ A») framfor å genereres automatisk.
 | 7 | **Feil bruk av listevariabel** – array-variabel må brukes som egen streng `"${x}"` | ❌ Feil | `VariabelflettingJson.flettVariabler` (array-grenen matcher `"${x}"`) |
 | 8 | **Ugyldig versjonsformat** på `gyldigVersjon` / `metainfo.støttetAvPaOrkBa01FraVersjon` | ❌ Feil | `Versjon` (regex `\d+(\.\d+)*(-SNAPSHOT)?`) |
 | 9 | **Feil `metainfo.mal`** – filnavnet i `mal` må matche filas eget navn (fanger kopier-lim-feil). **Av som standard** – aktiveres med `--streng-metainfo`, fordi filer ofte blir omdøpt (f.eks. til `flytkontroll-<id>.json`) før de kjøres. | ❌ Feil | konvensjon i maler |
-| 10 | **Feil `grunnlagsdataMappe` for batch** – filer kopieres til `grunnlagsdataMappeTil` for en batch (`kopier_fra_arkiv_til_batch`), men batchen kjøres senere med en annen `grunnlagsdataMappe` → batchen finner ikke filene. Tilstanden per batch nullstilles av `rydd_grunnlagsdata_for_batch`. | ❌ Feil | `kopier_fra_arkiv_til_batch` / batch-kjøring i `panda-orkestrering` |
+| 10 | **Feil `grunnlagsdataMappe` for batch** – filer kopieres til `grunnlagsdataMappeTil` for en batch (`kopier_fra_arkiv_til_batch`), men batchen kjøres senere med en annen `grunnlagsdataMappe` → batchen finner ikke filene. Tilstanden per batch nullstilles av `rydd_grunnlagsdata_for_batch`. Verdiene flettes med `variabler` før sammenligning (også sammensatte som `grunnlagsdata_${dato}`); inneholder de en udefinert variabel, hoppes sjekken over. | ❌ Feil | `kopier_fra_arkiv_til_batch` / batch-kjøring i `panda-orkestrering` |
 
 **❌ Feil** betyr at fila ikke vil fungere, og gir exit-kode 1. **Advarsler**
 gir ikke feilende exit-kode, siden maler naturlig har uutfylte

@@ -27,7 +27,10 @@ pub enum Kommandoer {
         after_help = "EKSEMPLER:\n  \
                       pcli rnd a b c d e f ..."
     )]
-    VelgTilfeldig { verdier: Vec<String> },
+    VelgTilfeldig {
+        #[arg(required = true)]
+        verdier: Vec<String>,
+    },
 
     #[clap(name = "valider")]
     #[command(
@@ -45,6 +48,7 @@ pub enum Kommandoer {
                       eller ubrukte (⚠️) variabler gir ikke feil, siden maler har uutfylte plassholdere.\n"
     )]
     RutinefilValider {
+        #[arg(required = true)]
         file_paths: Vec<String>,
         #[clap(
             long = "streng-metainfo",
@@ -78,27 +82,8 @@ pub enum Kommandoer {
     )]
     CsvSummering {
         kolonne_nr: usize,
+        #[arg(required = true)]
         file_paths: Vec<String>,
-    },
-
-    #[clap(name = "diff")]
-    #[command(
-        about = "*Ikke implementert* Sammenlikner to sett med filer for å finne forskjeller.",
-        long_about = "Denne kommandoen sammenligner to sett med filer og viser forskjeller mellom dem. \
-                          Den kan brukes til å finne endringer i innholdet i filene.",
-        after_help = "EKSEMPLER:\n  \
-                          pcli diff --venstre fil1.txt fil2.txt --høyre fil3.txt fil4.txt\n  \
-                          pcli diff --venstre original/*.txt --høyre nye/*.bak"
-    )]
-    Diff {
-        #[clap(long, value_name = "VENSTRE_FILER", required = true, num_args = 1.., help = "Første sett med filer som skal sammenlignes")]
-        venstre: Vec<String>,
-
-        #[clap(long, value_name = "HØYRE_FILER", required = true, num_args = 1.., help = "Andre sett med filer som skal sammenlignes")]
-        høyre: Vec<String>,
-
-        #[clap(long, value_name = "ignorerte_kolonner", num_args = 1.., help = "Kolonner i CSV-filer som skal ignoreres under sammenligning")]
-        ignorer: Vec<usize>,
     },
 
     #[clap(name = "operasjoner")]
